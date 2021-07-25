@@ -1,0 +1,45 @@
+html, body {
+    margin: 0;
+    padding: 0;
+}
+
+canvas {
+    display: block;
+    z-index: -1;
+}
+
+#header_logo {
+    position: absolute;
+    top: 30px;
+    left: 30px;
+    height: 100px;
+    z-index: 9999;
+}
+
+#github_logo {
+    position: absolute;
+    bottom: 20px;
+    right: 30px;
+    height: 30px;
+    z-index: 9999;
+}
+
+#volume_icon {
+    position: absolute;
+    bottom: 20px;
+    left: 30px;
+    height: 30px;
+    z-index: 9999;
+}
+
+#trail_icon {
+    position: absolute;
+    bottom: 20px;
+    left: 80px;
+    height: 30px;
+    z-index: 9999;
+}
+
+.ui_item:hover {
+    cursor: pointer;
+}
