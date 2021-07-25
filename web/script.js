@@ -1,8 +1,27 @@
+class Task {
+    constructor(A, W) {
+        this.A = A;
+        this.W = W;
+    }
+}
+
+var a_list = [100, 200];
+var w_list = [40, 80];
+var n = 7;
+var tasks = [];
+var taskIdx = 0;
+
 var clickNumber = 0;
 var isMute = false;
 var isTrailing = false;
+var isTaskRunning = false;
+var isTaskFinished = false;
 
 var beginFlag = false;
+
+var target = 0;
+var A = 500;
+var W = 100;
 
 $(document).ready(function() {
     // Change GitHub logo on hover
@@ -35,16 +54,24 @@ $(document).ready(function() {
 
     // Register mouse click on canvas
     $(document).on("click", "canvas", function() {
-        onCanvasClick();
+        if (isTaskRunning) {
+            onCanvasClick();
+        }
+        else {
+            
+        
+        }
+    });
+
+    // Write jquery function to check keypress
+    $(document).keypress(function(e) {
+        if (e.which == 32) {
+            beginApp([100], [50, 90]);
+        }
     });
 
     // Register mouse click on UI elements
     $(document).on("click", ".ui_item", function() {
-        console.log("Clicked");
-        //clickNumber++;
-        // print id of element
-        console.log($(this).attr("id"));
-
         var id = $(this).attr("id");
         if (id == "volume_icon") {
             isMute = !isMute;
@@ -56,41 +83,75 @@ $(document).ready(function() {
             renderTrailImage(true);
         }
     });
+
 });
 
-class TargetPos {
-    constructor(x, y) {
-        this.x = x;
-        this.y = y;
+/*
+ * Starts the WebFitt Application.
+ *
+ * Parameters
+ * a_list: (Integer[]) List of amplitude values
+ * w_list: (Integer[]) List of width values
+ * 
+ */
+function beginApp(a_list, w_list) {
+    taskIdx = 0;
+    clickNumber = 0;
+    target = 0;
+    tasks = generateTaskSequence(a_list, w_list);
+    if (tasks.length == 0) {
+        alert("ERROR: No task to run.");
+    }
+    else {
+        isTaskRunning = true;
     }
 }
 
-var flag = true;
+function stopApp() {
+    isAppRunning = false;
+    noLoop();
+}
 
-let canvasWidth = document.documentElement.clientWidth;
-let canvasHeight = document.documentElement.clientHeight;
-
-var target = 0;
-var n = 7;
-var A = 500;
-var W = 100;
+function preload() {
+    robotoLightFont = loadFont("web/assets/roboto-light.ttf");
+    robotoRegularFont = loadFont("web/assets/roboto-regular.ttf");
+}
 
 function setup() {
-    createCanvas(canvasWidth, canvasHeight);
+    createCanvas(windowWidth, windowHeight);
     frameRate(60);
     background(255);
 }
   
 function draw() {
-    renderTrail();
-    runPipeline();
-    renderTargets(A, W, n);
+    if (isTaskRunning) {
+        renderTrail();
+        runPipeline();
+        renderInfoText();
+        renderTargets(A, W, n);
+    }
+    else if (isTaskFinished) {
+        renderTaskCompleteMessage();
+    }
+    else {
+        background(255);
+    }
 }
 
 function runPipeline() {
+    A = tasks[taskIdx].A;
+    W = tasks[taskIdx].W;
+
     target = getTargetIdxFromClickNumber(clickNumber, n);
+
     if (clickNumber == n + 1) {
-        console.log("Done");
+        if (taskIdx < tasks.length - 1) {
+            taskIdx++;
+        }
+        else {
+            isTaskRunning = false;
+            isTaskFinished = true;
+        }
         clickNumber = 0;
         beginFlag = false;
     }
@@ -98,7 +159,6 @@ function runPipeline() {
 
 function onCanvasClick() {
     var correct = isClickCorrect();
-    print(correct);
     if (correct && !beginFlag) {
         beginFlag = true;
     }
@@ -107,13 +167,44 @@ function onCanvasClick() {
     }
 }
 
+/*
+ * Generates a randomized sequence of tasks.
+ *
+ * Parameters
+ * a_list: (Integer[]) List of amplitude values
+ * w_list: (Integer[]) List of width values
+ * 
+ * Returns
+ * (Task[]) Randomized sequence of tasks
+ * 
+ */
+function generateTaskSequence(a_list, w_list) {
+    // Creating an array with a cross product of a_list and w_list
+    var taskSequence = [];
+    for (var i = 0; i < a_list.length; i++) {
+        for (var j = 0; j < w_list.length; j++) {
+            taskSequence.push(new Task(a_list[i], w_list[j]));
+        }
+    }
+
+    // Shuffling the array
+    for (var i = taskSequence.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var temp = taskSequence[i];
+        taskSequence[i] = taskSequence[j];
+        taskSequence[j] = temp;
+    }
+
+    return taskSequence;
+}
+
+// Checks if the target is clicked
 function isClickCorrect() {
     let thetaX = 360 / n;
     var x = (width / 2) + cos(radians(target * thetaX)) * A;
     var y = (height / 2) + sin(radians(target * thetaX)) * A;
 
     var dist = sqrt(pow(mouseX - x, 2) + pow(mouseY - y, 2));
-    console.log(dist);
     if (dist < W / 2) {
         return true;
     }
@@ -122,21 +213,53 @@ function isClickCorrect() {
     }
 }
 
-// Check if space is pressed
+// Maps key pres to UI controls
 function keyPressed() {
-    if (keyCode === 32) {
+    if (key === 't') {
         isTrailing = !isTrailing;
         renderTrailImage(false);
     }
+    else if (key == 's') {
+        isMute = !isMute;
+        renderVolumeImage(false);
+    }
 }
 
+// Renders trail on mouse cursor
 function renderTrail() {
     if (!isTrailing || !beginFlag) {
         background(255);
     }
+    if (isTrailing && beginFlag) {
+        noStroke();
+        fill("#AAAAAA");
+        circle(mouseX, mouseY, 2);
+        stroke("#AAAAAA");
+        strokeWeight(2);
+        line(mouseX, mouseY, pmouseX, pmouseY);
+    }
+}
+
+// Renders task information text
+function renderInfoText() {
     noStroke();
-    fill("#AAAAAA");
-    circle(mouseX, mouseY, 5);
+    textSize(28);
+    fill(0);
+    textFont(robotoRegularFont);
+    textAlign(LEFT);
+    text("Task " + (taskIdx + 1) + " of " + tasks.length, width - 350, 50);
+    textFont(robotoLightFont);
+    text("Amplitude " + tasks[taskIdx].A + " | Width " + tasks[taskIdx].W, width - 350, 85);
+}
+
+function renderTaskCompleteMessage() {
+    background(255);
+    noStroke();
+    textSize(64);
+    fill(0);
+    textFont(robotoLightFont);
+    textAlign(CENTER, CENTER);
+    text("Task Complete!", width / 2, height / 2);
 }
 
 /*
@@ -150,13 +273,23 @@ function renderTrail() {
  */
 function renderTargets(A, W, n) {
     let thetaX = 360 / n;
+    
+    // Clearing circle inner area
     for (var i = 0; i < n; i++) {
         var x = (width / 2) + cos(radians(i * thetaX)) * A;
         var y = (height / 2) + sin(radians(i * thetaX)) * A;
+        noStroke();
+        fill("#FFFFFF");
+        circle(x, y, W);
+    }
 
+    // Creating circles with transparent inner areas
+    for (var i = 0; i < n; i++) {
+        var x = (width / 2) + cos(radians(i * thetaX)) * A;
+        var y = (height / 2) + sin(radians(i * thetaX)) * A;
         stroke("#181818");
         strokeWeight(3);
-        fill("#DDDDDD");
+        noFill();
         if (i == target) {
             fill("#3D9970");
         }
