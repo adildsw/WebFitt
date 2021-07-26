@@ -12,18 +12,22 @@ var tasks = [];
 var taskIdx = 0;
 
 var clickNumber = 0;
+
 var isMute = false;
 var isTrailing = false;
 var isTaskRunning = false;
 var isTaskFinished = false;
-
 var beginFlag = false;
 
-var target = 0;
-var A = 500;
-var W = 100;
+var clickData = [];
+var aggregateResults = [];
+var servdown = false;
 
 $(document).ready(function() {
+    if ($("#server-download").data()["servdown"] == "True") {
+        servdown = true;
+    }
+
     // Change GitHub logo on hover
     $("#github_logo").hover(function() {
         $("#github_logo").attr("src", "web/assets/github_hover.png");
@@ -56,10 +60,6 @@ $(document).ready(function() {
     $(document).on("click", "canvas", function() {
         if (isTaskRunning) {
             onCanvasClick();
-        }
-        else {
-            
-        
         }
     });
 
@@ -97,7 +97,6 @@ $(document).ready(function() {
 function beginApp(a_list, w_list) {
     taskIdx = 0;
     clickNumber = 0;
-    target = 0;
     tasks = generateTaskSequence(a_list, w_list);
     if (tasks.length == 0) {
         alert("ERROR: No task to run.");
@@ -105,11 +104,6 @@ function beginApp(a_list, w_list) {
     else {
         isTaskRunning = true;
     }
-}
-
-function stopApp() {
-    isAppRunning = false;
-    noLoop();
 }
 
 function preload() {
@@ -128,7 +122,6 @@ function draw() {
         renderTrail();
         runPipeline();
         renderInfoText();
-        renderTargets(A, W, n);
     }
     else if (isTaskFinished) {
         renderTaskCompleteMessage();
@@ -139,10 +132,10 @@ function draw() {
 }
 
 function runPipeline() {
-    A = tasks[taskIdx].A;
-    W = tasks[taskIdx].W;
-
-    target = getTargetIdxFromClickNumber(clickNumber, n);
+    var A = tasks[taskIdx].A;
+    var W = tasks[taskIdx].W;
+    var mainTarget = getTargetIdxFromClickNumber(clickNumber, n);
+    renderTargets(A, W, n, mainTarget);
 
     if (clickNumber == n + 1) {
         if (taskIdx < tasks.length - 1) {
@@ -158,7 +151,11 @@ function runPipeline() {
 }
 
 function onCanvasClick() {
-    var correct = isClickCorrect();
+    var A = tasks[taskIdx].A;
+    var W = tasks[taskIdx].W;
+    var mainTarget = getTargetIdxFromClickNumber(clickNumber, n);
+
+    var correct = isClickCorrect(A, W, n, mainTarget);
     if (correct && !beginFlag) {
         beginFlag = true;
     }
@@ -198,11 +195,22 @@ function generateTaskSequence(a_list, w_list) {
     return taskSequence;
 }
 
-// Checks if the target is clicked
-function isClickCorrect() {
+/*
+ * Checks if the correct target is clicked.
+ * 
+ * Parameters
+ * A: (Integer) Amplitude, defined as the distance between the centers of the screen and each target
+ * W: (Integer) Width (radius) of the targets
+ * n: (Integer) Number of targets
+ * mainTarget: (Integer) Index of the main target
+ * 
+ * Returns
+ * (Boolean) True if the correct target is clicked, false otherwise
+ */
+function isClickCorrect(A, W, n, mainTarget) {
     let thetaX = 360 / n;
-    var x = (width / 2) + cos(radians(target * thetaX)) * A;
-    var y = (height / 2) + sin(radians(target * thetaX)) * A;
+    var x = (width / 2) + cos(radians(mainTarget * thetaX)) * A;
+    var y = (height / 2) + sin(radians(mainTarget * thetaX)) * A;
 
     var dist = sqrt(pow(mouseX - x, 2) + pow(mouseY - y, 2));
     if (dist < W / 2) {
@@ -252,6 +260,7 @@ function renderInfoText() {
     text("Amplitude " + tasks[taskIdx].A + " | Width " + tasks[taskIdx].W, width - 350, 85);
 }
 
+// Renders a message when the task(s) are complete
 function renderTaskCompleteMessage() {
     background(255);
     noStroke();
@@ -259,7 +268,58 @@ function renderTaskCompleteMessage() {
     fill(0);
     textFont(robotoLightFont);
     textAlign(CENTER, CENTER);
-    text("Task Complete!", width / 2, height / 2);
+    if (tasks.length == 1) {
+        text("Task Complete!", width / 2, height / 2);
+    }
+    else {
+        text("Tasks Complete!", width / 2, height / 2);
+    }
+
+    if (servdown) {
+        textSize(16);
+        text("A copy of your result is uploaded to the server.", width / 2, (height / 2) + 60);
+    }
+}
+
+function storeClickData() {
+    var data = [];
+}
+
+function computeAggregateResults() {
+    if (clickData.length != tasks.length * n) {
+        alert("ERROR: Data is corrupt.");
+        return;
+    }
+
+    for (var i = 0; i < tasks.length; i++) {
+        var aggRes = [];
+        aggRes.push(participantCode);
+        aggRes.push(sessionCode);
+        aggRes.push(conditionCode);
+        aggRes.push(handDominance);
+        aggRes.push(pointingDevice);
+        aggRes.push(deviceExperience);
+        aggRes.push(tasks[i].A);
+        aggRes.push(tasks[i].W);
+        aggRes.push(n);
+        aggRes.push(i);
+
+    }
+}
+
+function generateResults() {
+    // Result Types: Individual Clicks/Task, Aggregate Results
+    
+    // Individual Clicks/Task Headers
+    // ---------------------------
+    // Participant Code, Session Code, Condition Code, Hand Dominance, Pointing Device, Device Experience, A, W, n, Task Number, Click Number, Click Time, SourceX, SourceY, TargetX, TargetY, ClickX, ClickY, Source-Target Distance, dx, isCorrect
+
+    // Aggregate Results Headers
+    // ---------------------------
+    // Participant Code, Session Code, Condition Code, Hand Dominance, Pointing Device, Device Experience, A, W, n, Task Number, Mean Time, Error %, SDx, Average Source-Target Distance, Throughput
+
+    aggregateResults = [];
+    for
 }
 
 /*
@@ -269,9 +329,10 @@ function renderTaskCompleteMessage() {
  * A: (Integer) Amplitude, defined as the distance between the centers of the screen and each target
  * W: (Integer) Width (radius) of the targets
  * n: (Integer) Number of targets
+ * mainTarget: (Integer) Index of the main target
  * 
  */
-function renderTargets(A, W, n) {
+function renderTargets(A, W, n, mainTarget) {
     let thetaX = 360 / n;
     
     // Clearing circle inner area
@@ -290,7 +351,7 @@ function renderTargets(A, W, n) {
         stroke("#181818");
         strokeWeight(3);
         noFill();
-        if (i == target) {
+        if (i == mainTarget) {
             fill("#3D9970");
         }
         circle(x, y, W);
