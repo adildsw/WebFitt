@@ -1,13 +1,18 @@
 class Task {
-    constructor(A, W) {
+    constructor(A, W, n) {
         this.A = A;
         this.W = W;
+        this.n = n;
     }
 }
 
-var a_list = [100, 200];
-var w_list = [40, 80];
-var n = 7;
+class Pos {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+    }
+}
+
 var tasks = [];
 var taskIdx = 0;
 
@@ -19,9 +24,24 @@ var isTaskRunning = false;
 var isTaskFinished = false;
 var beginFlag = false;
 
+var participantCode = "";
+var sessionCode = "";
+var conditionCode = "";
+var handDominance = "";
+var pointingDevice = "";
+var deviceExperience = "";
+
+var lastClickTime = 0;
+var currentClickTime = 0;
+
 var clickData = [];
-var aggregateResults = [];
+var aggregateTaskResult = [];
+var overallMeanResult = [];
 var servdown = false;
+
+let clickDataHeader = ["Participant Code", "Session Code", "Condition Code", "Hand Dominance", "Pointing Device", "Device Experience", "Amplitude", "Width", "Number of Targets", "Task Index", "Click Number", "Click Time (ms)", "Source X", "Source Y", "Target X", "Target Y", "Click X", "Click Y", "Source-Target Distance", "dx", "Incorrect"];
+let aggregateTaskResultHeader = ["Participant Code", "Session Code", "Condition Code", "Hand Dominance", "Pointing Device", "Device Experience", "Amplitude", "Width", "Number of Targets", "Task Index", "Mean Time (ms)", "Error (%)", "SDx", "We", "IDe", "Ae", "Throughput (bps)"];
+let overallMeanResultHeader = ["Participant Code", "Session Code", "Condition Code", "Hand Dominance", "Pointing Device", "Device Experience", "Mean Click Time (ms)", "Mean Click Error (%)", "Mean Throughput (bps)"];
 
 $(document).ready(function() {
     if ($("#server-download").data()["servdown"] == "True") {
@@ -66,7 +86,7 @@ $(document).ready(function() {
     // Write jquery function to check keypress
     $(document).keypress(function(e) {
         if (e.which == 32) {
-            beginApp([100], [50, 90]);
+            beginApp([100], [50, 90], 7);
         }
     });
 
@@ -92,12 +112,16 @@ $(document).ready(function() {
  * Parameters
  * a_list: (Integer[]) List of amplitude values
  * w_list: (Integer[]) List of width values
+ * n: (Integer) Number of targets
  * 
  */
-function beginApp(a_list, w_list) {
+function beginApp(a_list, w_list, n) {
     taskIdx = 0;
     clickNumber = 0;
-    tasks = generateTaskSequence(a_list, w_list);
+    clickData = [];
+    aggregateTaskResult = [];
+    overallMeanResult = [];
+    tasks = generateTaskSequence(a_list, w_list, n);
     if (tasks.length == 0) {
         alert("ERROR: No task to run.");
     }
@@ -134,6 +158,7 @@ function draw() {
 function runPipeline() {
     var A = tasks[taskIdx].A;
     var W = tasks[taskIdx].W;
+    var n = tasks[taskIdx].n;
     var mainTarget = getTargetIdxFromClickNumber(clickNumber, n);
     renderTargets(A, W, n, mainTarget);
 
@@ -144,6 +169,13 @@ function runPipeline() {
         else {
             isTaskRunning = false;
             isTaskFinished = true;
+            computeAggregateTaskResult();
+            computeOverallMeanResult();
+            var filename = "WebFitts_" + participantCode + "_" + sessionCode + "_" + conditionCode + "_" + pointingDevice;
+            saveAsTextFile(generateResultString(), filename + ".csv");
+            if (servdown) {
+                uploadResult();
+            }
         }
         clickNumber = 0;
         beginFlag = false;
@@ -153,14 +185,22 @@ function runPipeline() {
 function onCanvasClick() {
     var A = tasks[taskIdx].A;
     var W = tasks[taskIdx].W;
+    var n = tasks[taskIdx].n;
     var mainTarget = getTargetIdxFromClickNumber(clickNumber, n);
+    var clickPos = new Pos(mouseX, mouseY);
 
-    var correct = isClickCorrect(A, W, n, mainTarget);
+    var correct = isClickCorrect(A, W, n, mainTarget, clickPos);
     if (correct && !beginFlag) {
         beginFlag = true;
-    }
-    if (beginFlag) {
+        lastClickTime = millis();
+        currentClickTime = lastClickTime;
         clickNumber++;
+    }
+    else if (beginFlag) {
+        currentClickTime = millis();
+        computeClickData(clickPos);
+        clickNumber++;
+        lastClickTime = currentClickTime;
     }
 }
 
@@ -170,17 +210,18 @@ function onCanvasClick() {
  * Parameters
  * a_list: (Integer[]) List of amplitude values
  * w_list: (Integer[]) List of width values
+ * n: (Integer) Number of targets
  * 
  * Returns
  * (Task[]) Randomized sequence of tasks
  * 
  */
-function generateTaskSequence(a_list, w_list) {
+function generateTaskSequence(a_list, w_list, n) {
     // Creating an array with a cross product of a_list and w_list
     var taskSequence = [];
     for (var i = 0; i < a_list.length; i++) {
         for (var j = 0; j < w_list.length; j++) {
-            taskSequence.push(new Task(a_list[i], w_list[j]));
+            taskSequence.push(new Task(a_list[i], w_list[j], n));
         }
     }
 
@@ -203,16 +244,15 @@ function generateTaskSequence(a_list, w_list) {
  * W: (Integer) Width (radius) of the targets
  * n: (Integer) Number of targets
  * mainTarget: (Integer) Index of the main target
+ * clickPos: (Pos) Position of the mouse click
  * 
  * Returns
  * (Boolean) True if the correct target is clicked, false otherwise
+ * 
  */
-function isClickCorrect(A, W, n, mainTarget) {
-    let thetaX = 360 / n;
-    var x = (width / 2) + cos(radians(mainTarget * thetaX)) * A;
-    var y = (height / 2) + sin(radians(mainTarget * thetaX)) * A;
-
-    var dist = sqrt(pow(mouseX - x, 2) + pow(mouseY - y, 2));
+function isClickCorrect(A, W, n, mainTarget, clickPos) {
+    var pos = getTargetPosition(A, n, mainTarget);
+    var dist = sqrt(pow(clickPos.x - pos.x, 2) + pow(clickPos.y - pos.y, 2));
     if (dist < W / 2) {
         return true;
     }
@@ -255,14 +295,26 @@ function renderInfoText() {
     fill(0);
     textFont(robotoRegularFont);
     textAlign(LEFT);
-    text("Task " + (taskIdx + 1) + " of " + tasks.length, width - 350, 50);
+    text("Task " + (taskIdx + 1) + " of " + tasks.length, width - 400, 50);
     textFont(robotoLightFont);
-    text("Amplitude " + tasks[taskIdx].A + " | Width " + tasks[taskIdx].W, width - 350, 85);
+    text("Amplitude " + tasks[taskIdx].A + " | Width " + tasks[taskIdx].W, width - 400, 85);
 }
 
-// Renders a message when the task(s) are complete
+// Renders a message and aggregate info when the task(s) are complete
 function renderTaskCompleteMessage() {
     background(255);
+
+    noStroke();
+    textSize(28);
+    fill(0);
+    textFont(robotoRegularFont);
+    textAlign(LEFT);
+    text("Overall Mean Result", width - 400, 50);
+    textFont(robotoLightFont);
+    text("Mean Time (ms): " + Math.round(overallMeanResult[0][6] * 100) / 100, width - 400, 85);
+    text("Mean Error (%): " + Math.round(overallMeanResult[0][7] * 100) / 100, width - 400, 120);
+    text("Mean Throughput (bps): " + Math.round(overallMeanResult[0][8] * 100) / 100, width - 400, 155);
+
     noStroke();
     textSize(64);
     fill(0);
@@ -277,21 +329,81 @@ function renderTaskCompleteMessage() {
 
     if (servdown) {
         textSize(16);
-        text("A copy of your result is uploaded to the server.", width / 2, (height / 2) + 60);
+        text("A copy of your result has been uploaded to the server.", width / 2, (height / 2) + 60);
     }
 }
 
-function storeClickData() {
+/*
+ * Processes click data and appends it to clickData array.
+ *
+ * Parameters
+ * clickPos: (Pos) Coordinate of the mouse click
+ * 
+ */
+function computeClickData(clickPos) {
+    var A = tasks[taskIdx].A;
+    var W = tasks[taskIdx].W;
+    var n = tasks[taskIdx].n;
+    var clickTime = currentClickTime - lastClickTime;
+    var sourcePos = getTargetPosition(A, n, getTargetIdxFromClickNumber(clickNumber - 1, n));
+    var targetPos = getTargetPosition(A, n, getTargetIdxFromClickNumber(clickNumber, n));
+
+    var sourceTargetDist = sqrt(pow(sourcePos.x - targetPos.x, 2) + pow(sourcePos.y - targetPos.y, 2));
+    var sourceClickDist = sqrt(pow(clickPos.x - sourcePos.x, 2) + pow(clickPos.y - sourcePos.y, 2));
+    var targetClickDist = sqrt(pow(clickPos.x - targetPos.x, 2) + pow(clickPos.y - targetPos.y, 2));
+    var dx = (pow(sourceClickDist, 2) - pow(targetClickDist, 2) - pow(sourceTargetDist, 2)) / (2 * sourceTargetDist);
+    var isIncorrect = isClickCorrect(A, W, n, getTargetIdxFromClickNumber(clickNumber, n), clickPos) ? 0 : 1;
+
     var data = [];
+    data.push(participantCode);
+    data.push(sessionCode);
+    data.push(conditionCode);
+    data.push(handDominance);
+    data.push(pointingDevice);
+    data.push(deviceExperience);
+    data.push(A);
+    data.push(W);
+    data.push(n);
+    data.push(taskIdx);
+    data.push(clickNumber);
+    data.push(clickTime);
+    data.push(sourcePos.x);
+    data.push(sourcePos.y);
+    data.push(targetPos.x);
+    data.push(targetPos.y);
+    data.push(clickPos.x);
+    data.push(clickPos.y);
+    data.push(sourceTargetDist);
+    data.push(dx);
+    data.push(isIncorrect);
+
+    clickData.push(data);
 }
 
-function computeAggregateResults() {
-    if (clickData.length != tasks.length * n) {
-        alert("ERROR: Data is corrupt.");
-        return;
-    }
-
+// Computes the aggregate task results and appends it to aggregateTaskResult array.
+function computeAggregateTaskResult() {
     for (var i = 0; i < tasks.length; i++) {
+        var A = tasks[i].A;
+        var W = tasks[i].W;
+        var n = tasks[i].n;
+        var clickTimeList = [];
+        var errorList = [];
+        var dxList = [];
+        var avgEffectiveAmplitudeList = [];
+        for (var j = i * n; j < (i + 1) * n; j++) {
+            clickTimeList.push(clickData[j][11]);
+            errorList.push(clickData[j][20]);
+            dxList.push(clickData[j][19]);
+            avgEffectiveAmplitudeList.push((clickData[j][18] + clickData[j][19]));
+        }
+        var meanTime = computeMean(clickTimeList);
+        var error = computeMean(errorList) * 100;
+        var sdx = computeStandardDeviation(dxList);
+        var ae = computeMean(avgEffectiveAmplitudeList);
+        var we = 4.133 * sdx;
+        var ide = Math.log2(ae / we + 1.0);
+        var throughput = ide * 1000 / meanTime;
+
         var aggRes = [];
         aggRes.push(participantCode);
         aggRes.push(sessionCode);
@@ -299,27 +411,79 @@ function computeAggregateResults() {
         aggRes.push(handDominance);
         aggRes.push(pointingDevice);
         aggRes.push(deviceExperience);
-        aggRes.push(tasks[i].A);
-        aggRes.push(tasks[i].W);
+        aggRes.push(A);
+        aggRes.push(W);
         aggRes.push(n);
         aggRes.push(i);
+        aggRes.push(meanTime);
+        aggRes.push(error);
+        aggRes.push(sdx);
+        aggRes.push(we);
+        aggRes.push(ide);
+        aggRes.push(ae);
+        aggRes.push(throughput);
 
+        aggregateTaskResult.push(aggRes);
     }
 }
 
-function generateResults() {
-    // Result Types: Individual Clicks/Task, Aggregate Results
+// Computes overall mean task results and appends it to overallMeanResult array.
+function computeOverallMeanResult() {
+    var meanTimes = [];
+    var errors = [];
+    var throughputs = [];
+    for (var i = 0; i < tasks.length; i++) {
+        meanTimes.push(aggregateTaskResult[i][10]);
+        errors.push(aggregateTaskResult[i][11]);
+        throughputs.push(aggregateTaskResult[i][16]);
+    }
+    var overallMeanTime = computeMean(meanTimes);
+    var overallMeanError = computeMean(errors);
+    var overallMeanThroughput = computeMean(throughputs);
     
-    // Individual Clicks/Task Headers
-    // ---------------------------
-    // Participant Code, Session Code, Condition Code, Hand Dominance, Pointing Device, Device Experience, A, W, n, Task Number, Click Number, Click Time, SourceX, SourceY, TargetX, TargetY, ClickX, ClickY, Source-Target Distance, dx, isCorrect
+    var ovRes = [];
+    ovRes.push(participantCode);
+    ovRes.push(sessionCode);
+    ovRes.push(conditionCode);
+    ovRes.push(handDominance);
+    ovRes.push(pointingDevice);
+    ovRes.push(deviceExperience);
+    ovRes.push(overallMeanTime);
+    ovRes.push(overallMeanError);
+    ovRes.push(overallMeanThroughput);
 
-    // Aggregate Results Headers
-    // ---------------------------
-    // Participant Code, Session Code, Condition Code, Hand Dominance, Pointing Device, Device Experience, A, W, n, Task Number, Mean Time, Error %, SDx, Average Source-Target Distance, Throughput
+    overallMeanResult.push(ovRes);
+}
 
-    aggregateResults = [];
-    for
+// Concatenates all the result arrays into a string and returns it
+function generateResultString() {
+    var resultString = "";
+    resultString = clickDataHeader.join(",") + "\n";
+    for (var i = 0; i < clickData.length; i++) {
+        resultString += clickData[i].join(",") + "\n";
+    }
+    resultString += "\n";
+    resultString += aggregateTaskResultHeader.join(",") + "\n";
+    for (var i = 0; i < aggregateTaskResult.length; i++) {
+        resultString += aggregateTaskResult[i].join(",") + "\n";
+    }
+    resultString += "\n";
+    resultString += overallMeanResultHeader.join(",") + "\n";
+    for (var i = 0; i < overallMeanResult.length; i++) {
+        resultString += overallMeanResult[i].join(",") + "\n";
+    }
+    return resultString;
+}
+
+// Uploads result string to the server
+function uploadResult() {
+    var result = generateResultString();
+    var filename = "WebFitts_" + participantCode + "_" + sessionCode + "_" + conditionCode + "_" + pointingDevice;
+    var data = "filename=" + filename + "&result=" + result;
+    var url = "/saveResult";
+    postRequest(url, data, function() {
+        console.log("Result uploaded to server!");
+    });
 }
 
 /*
@@ -333,28 +497,24 @@ function generateResults() {
  * 
  */
 function renderTargets(A, W, n, mainTarget) {
-    let thetaX = 360 / n;
-    
     // Clearing circle inner area
     for (var i = 0; i < n; i++) {
-        var x = (width / 2) + cos(radians(i * thetaX)) * A;
-        var y = (height / 2) + sin(radians(i * thetaX)) * A;
+        var pos = getTargetPosition(A, n, i);
         noStroke();
         fill("#FFFFFF");
-        circle(x, y, W);
+        circle(pos.x, pos.y, W);
     }
 
     // Creating circles with transparent inner areas
     for (var i = 0; i < n; i++) {
-        var x = (width / 2) + cos(radians(i * thetaX)) * A;
-        var y = (height / 2) + sin(radians(i * thetaX)) * A;
+        var pos = getTargetPosition(A, n, i);
         stroke("#181818");
         strokeWeight(3);
         noFill();
         if (i == mainTarget) {
             fill("#3D9970");
         }
-        circle(x, y, W);
+        circle(pos.x, pos.y, W);
     }
 }
 
@@ -391,6 +551,25 @@ function getTargetIdxFromClickNumber(c, n) {
     }
 
     return targetIdx;
+}
+
+/*
+ * Calculates the position of the target.
+ *
+ * Parameters
+ * A: (Integer) Amplitude, defined as the distance between the centers of the screen and each target
+ * n: (Integer) Number of targets
+ * idx: (Integer) Index of the target
+ * 
+ * Returns
+ * (Pos) Position of the target
+ * 
+ */
+function getTargetPosition(A, n, idx){
+    var thetaX = 360 / n;
+    var x = (width / 2) + cos(radians(idx * thetaX)) * A;
+    var y = (height / 2) + sin(radians(idx * thetaX)) * A;
+    return new Pos(x, y);
 }
 
 // Resizes the canvas to fit the window on resize
@@ -444,6 +623,25 @@ function renderTrailImage(isHovering) {
  |----------------------------------------------------
  */
 
+// Computes mean of given data
+function computeMean(data) {
+    var sum = 0;
+    for (var i = 0; i < data.length; i++) {
+        sum += data[i];
+    }
+    return sum / data.length;
+}
+
+// Computes standard deviation of given data
+function computeStandardDeviation(data) {
+    var mean = computeMean(data);
+    var sum = 0;
+    for (var i = 0; i < data.length; i++) {
+        sum += Math.pow(data[i] - mean, 2);
+    }
+    return Math.sqrt(sum / (data.length - 1));
+}
+
 // Generates a random number between min and max (inclusive)
 function randInt(min, max) {
     min = Math.ceil(min);
@@ -473,4 +671,64 @@ function postRequest(url, data, callback) {
     request.open("POST", url, true);
     request.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
     request.send(data);
+}
+
+// Function to save string as text file
+function saveAsTextFile(text, filename) {
+    var blob = new Blob([text], {type: "text/plain;charset=utf-8"});
+    var a = document.createElement("a");
+    a.href = window.URL.createObjectURL(blob);
+    a.download = filename;
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+
+/*
+ |----------------------------------------------------
+ | REFERENCE FUNCTIONS
+ |----------------------------------------------------
+ */
+
+// Calculation Test
+function testing() {
+    var sX = [540, 227, 540, 227, 540, 227, 540, 227, 540, 227, 540, 227, 540, 227, 540, 227, 540, 227, 540, 227];
+    var sY = [592, 592, 592, 592, 592, 592, 592, 592, 592, 592, 592, 592, 592, 592, 592, 592, 592, 592, 592, 592];
+    var tX = [227, 540, 227, 540, 227, 540, 227, 540, 227, 540, 227, 540, 227, 540, 227, 540, 227, 540, 227, 540];
+    var tY = [592, 592, 592, 592, 592, 592, 592, 592, 592, 592, 592, 592, 592, 592, 592, 592, 592, 592, 592, 592];
+    var cX = [218, 529, 195, 533, 209, 607, 231, 540, 231, 560, 207, 524, 239, 515, 180, 501, 215, 571, 215, 521];
+    var cY = [534, 496, 608, 547, 651, 554, 650, 568, 642, 567, 653, 604, 704, 610, 675, 606, 666, 621, 690, 641];
+    var mt = [262, 268, 248, 233, 251, 252, 283, 214, 301, 266, 258, 258, 248, 242, 241, 252, 243, 255, 252, 210];
+
+    var a = [];
+    var b = [];
+    var c = [];
+    var d = [];
+    var aes = [];
+
+    for (var i = 0; i < sX.length; i++) {
+        a.push(Math.sqrt((sX[i] - tX[i]) * (sX[i] - tX[i]) + (sY[i] - tY[i]) * (sY[i] - tY[i])));
+        b.push(Math.sqrt((tX[i] - cX[i]) * (tX[i] - cX[i]) + (tY[i] - cY[i]) * (tY[i] - cY[i])));
+        c.push(Math.sqrt((sX[i] - cX[i]) * (sX[i] - cX[i]) + (sY[i] - cY[i]) * (sY[i] - cY[i])));
+        d.push(((c[i] * c[i]) - (b[i] * b[i]) - (a[i] * a[i]))/(2.0 * a[i]));
+        aes.push(a[i] + d[i]);
+    }
+
+    var mean_d = computeMean(d);
+    var sd_d = computeStandardDeviation(d);
+    var ae = computeMean(aes);
+    var we = 4.133 * sd_d;
+    var ide = Math.log2(ae / we + 1.0);
+    var meant = computeMean(mt);
+    var throughput = ide * 1000 / meant;
+
+    console.log(d);
+    console.log(mean_d);
+    console.log(sd_d);
+    console.log(ae);
+    console.log(we);
+    console.log(ide);
+    console.log(meant);
+    console.log(throughput);
 }

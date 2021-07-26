@@ -11,6 +11,22 @@ app = Flask(__name__, static_folder="web", template_folder="web")
 def index():
     return render_template("index.html", servdown=True)
 
+@app.route("/saveResult", methods=["POST"])
+def save_result():
+    result = request.form["result"]
+    filename = request.form["filename"]
+    ip = request.remote_addr
+
+    timestamp = str(int(round(time() * 1000)))
+
+    if not os.path.exists("data"):
+        os.makedirs("data")
+
+    with open(os.path.join("data", "{}_{}_{}.csv".format(filename, ip, timestamp)), "w") as f:
+        f.write(result)
+    
+    return "OK"
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--ip", default="127.0.0.1", help="The ip to listen on. Default is 127.0.0.1")
