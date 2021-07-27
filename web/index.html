@@ -5,6 +5,8 @@
         <script src="web/p5.min.js"></script>
         <script src="web/p5.sound.min.js"></script>
         <script src="web/jquery-3.6.0.min.js"></script>
+        <script src="web/semantic.min.js"></script>
+        <link rel="stylesheet" type="text/css" href="web/semantic.min.css" />
         <link rel="stylesheet" type="text/css" href="web/style.css">
         <link rel="icon" href="web/assets/icon.png" type="image/x-icon">
         <meta id="server-download" data-servdown="{{servdown}}" />
@@ -12,6 +14,175 @@
     </head>
     <body>
         <script src="web/script.js"></script>
+        <div id="main_menu">
+            <div class="ui centered grid">
+                <div class="nine wide column">
+                    <div class="ui segment">
+                        <!-- LOGO -->
+                        <div class="ui container">
+                            <img id="form_logo" class="ui centered fluid image" src="web/assets/banner_alt_zoomed.png">
+                        </div>
+
+                        <!-- FORM -->
+                        <div class="ui form">
+
+                            <h4 class="ui horizontal divider header">
+                                <i class="user icon"></i>
+                                Demography Details
+                            </h4>
+
+                            <div class="three fields">
+                                <div class="field">
+                                    <label>Participant Code</label>
+                                    <input id="participant-code" placeholder="Participant Code" type="text" value="P0">
+                                </div>
+                                <div class="field">
+                                    <label>Session Code</label>
+                                    <input id="session-code" placeholder="Session Code" type="text" value="S0">
+                                </div>
+                                <div class="field">
+                                    <label>Condition Code</label>
+                                    <input id="condition-code" placeholder="Condition Code" type="text" value="C0">
+                                </div>
+                            </div>
+
+                            <div class="inline fields">
+                                <label>Hand Dominance</label>
+                                <div class="field">
+                                    <div class="ui radio checkbox">
+                                        <input type="radio" name="hand-dominance" checked="checked" value="Dominant">
+                                        <label>Dominant Hand</label>
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <div class="ui radio checkbox">
+                                        <input type="radio" name="hand-dominance" value="Non-Dominant">
+                                        <label>Non-Dominant Hand</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="inline fields">
+                                <label>Pointing Device</label>
+                                <div class="field">
+                                    <div class="ui radio checkbox">
+                                        <input type="radio" name="pointing-device" checked="checked" value="Mouse">
+                                        <label>Mouse</label>
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <div class="ui radio checkbox">
+                                        <input type="radio" name="pointing-device" value="Touchpad">
+                                        <label>Touchpad</label>
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <div class="ui radio checkbox">
+                                        <input type="radio" name="pointing-device" value="Joystick">
+                                        <label>Joystick</label>
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <div class="ui radio checkbox">
+                                        <input type="radio" name="pointing-device" value="Trackpoint">
+                                        <label>Trackpoint</label>
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <div class="ui radio checkbox">
+                                        <input type="radio" name="pointing-device" value="Other">
+                                        <label>Other</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="inline fields">
+                                <label>Device Experience</label>
+                                <div class="field">
+                                    <div class="ui radio checkbox">
+                                        <input type="radio" name="device-experience" value="Noob">
+                                        <label>Noob</label>
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <div class="ui radio checkbox">
+                                        <input type="radio" name="device-experience" value="Okayish">
+                                        <label>Okayish</label>
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <div class="ui radio checkbox">
+                                        <input type="radio" name="device-experience" checked="checked" value="Intermediate">
+                                        <label>Intermediate</label>
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <div class="ui radio checkbox">
+                                        <input type="radio" name="device-experience" value="Expert">
+                                        <label>Expert</label>
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <div class="ui radio checkbox">
+                                        <input type="radio" name="device-experience" value="God">
+                                        <label>God</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h4 class="ui horizontal divider header">
+                                <i class="cogs icon"></i>
+                                Test Parameters
+                            </h4>
+
+                            <div class="three fields">
+                                <div class="field" title="Supports multiple comma-separated values">
+                                    <label>Amplitude (A)</label>
+                                    <input id="amplitude" placeholder="Amplitude" type="text" value="250, 400">
+                                </div>
+                                <div class="field" title="Supports multiple comma-separated values">
+                                    <label>Width (W)</label>
+                                    <input id="width" placeholder="Session Code" type="text" value="50, 90">
+                                </div>
+                                <div class="field">
+                                    <label>Number of Targets (n)</label>
+                                    <select id="number-of-targets" class="ui dropdown">
+                                        <option value="3">3</option>
+                                        <option value="5">5</option>
+                                        <option value="7">7</option>
+                                        <option value="9">9</option>
+                                        <option value="11">11</option>
+                                        <option value="13">13</option>
+                                        <option value="15">15</option>
+                                        <option value="17">17</option>
+                                        <option value="19">19</option>
+                                        <option value="21">21</option>
+                                        <option value="23">23</option>
+                                        <option value="25">25</option>
+                                      </select>
+                                </div>
+                            </div>
+
+                            <h4 class="ui horizontal divider header servdown-policy">
+                                <i class="save icon"></i>
+                                Data Usage Policy
+                            </h4>
+
+                            <div class="inline field servdown-policy">
+                                <div class="ui checkbox">
+                                    <input id="policy" type="checkbox">
+                                    <label>I agree to share usage data with server for analytics</label>
+                                </div>
+                            </div>
+
+                            <div id="start-test-btn" class="ui fluid primary button">Start Test</div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div id="ui_elements">
             <img class="ui_item" id="header_logo" src="web/assets/header_logo.png" alt="WebFitt Header Logo" />
             <img class="ui_item" id="volume_icon" src="web/assets/volume_on_default.png" alt="Volume Icon" title="Toggle Sound (S)" />

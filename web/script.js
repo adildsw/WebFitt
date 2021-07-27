@@ -44,6 +44,7 @@ let aggregateTaskResultHeader = ["Participant Code", "Session Code", "Condition 
 let overallMeanResultHeader = ["Participant Code", "Session Code", "Condition Code", "Hand Dominance", "Pointing Device", "Device Experience", "Mean Click Time (ms)", "Mean Click Error (%)", "Mean Throughput (bps)"];
 
 $(document).ready(function() {
+    // Retrieving server download status from metadata
     if ($("#server-download").data()["servdown"] == "True") {
         servdown = true;
     }
@@ -104,6 +105,101 @@ $(document).ready(function() {
         }
     });
 
+    // Refresh page when header-logo is clicked
+    $("#header_logo").click(function() {
+        window.location.reload();
+    });
+
+    // Open GitHub project page when GitHub logo is clicked
+    $("#github_logo").click(function() {
+        window.open("https://github.com/adildsw/WebFitt");
+    });
+
+    // Validate input and starting the task
+    $(document).on("click", "#start-test-btn", function() {
+        participantCode = $("#participant-code").val();
+        sessionCode = $("#session-code").val();
+        conditionCode = $("#condition-code").val();
+        handDominance = $("input[name='hand-dominance']:checked").val();
+        pointingDevice = $("input[name='pointing-device']:checked").val();
+        deviceExperience = $("input[name='device-experience']:checked").val();
+        var A_raw = $("#amplitude").val();
+        var W_raw = $("#width").val();
+        var n = parseInt($("#number-of-targets").val());
+        var policy = false;
+        if ($("#policy").is(":checked")) {
+            policy = true;
+        }
+        var A = A_raw.replace(" ", '').split(",");
+        var W = W_raw.replace(" ", '').split(",");
+        
+        var correctFlag = true;
+        var errorMsg = "";
+
+        // Check empty values
+        if (participantCode == "") {
+            correctFlag = false;
+            errorMsg = "ERROR: Participant Code is empty.";
+        }
+        if (sessionCode == "") {
+            correctFlag = false;
+            errorMsg = "ERROR: Session Code is empty.";
+        }
+        if (conditionCode == "") {
+            correctFlag = false;
+            errorMsg = "ERROR: Condition Code is empty.";
+        }
+        if (A.length == 0) {
+            correctFlag = false;
+            errorMsg = "ERROR: Amplitude is empty.";
+        }
+        if (W.length == 0) {
+            correctFlag = false;
+            errorMsg = "ERROR: Width is empty.";
+        }
+
+        // Parsing amplitude and width values
+        if (isArrayOfNumbers(A)) {
+            A = parseArrayOfNumbers(A);
+        }
+        else {
+            correctFlag = false;
+            errorMsg = "ERROR: Incorrect amplitude value(s) entered."
+        }
+        if (isArrayOfNumbers(W)) {
+            W = parseArrayOfNumbers(W);
+        }
+        else {
+            correctFlag = false;
+            errorMsg = "ERROR: Incorrect width value(s) entered."
+        }
+
+        // Checking data usage policy agreement
+        if (!policy && servdown) {
+            correctFlag = false;
+            errorMsg = "ERROR: Data usage policy agreement is required."
+        }
+
+        if (correctFlag) {
+            // Hide Main Menu
+            $("#main_menu").hide();
+
+            // Begin App
+            beginApp(A, W, n);
+        }
+        else {
+            alert(errorMsg);
+        }
+    });
+
+    // Hide header logo at main menu
+    $("#header_logo").hide();
+
+    // Hide data policy checkbox at main menu if servdown is false
+    if (!servdown) {
+        $(".servdown-policy").hide();
+    }
+
 });
 
 /*
@@ -127,12 +223,15 @@ function beginApp(a_list, w_list, n) {
     }
     else {
         isTaskRunning = true;
+        $("#header_logo").show();
     }
 }
 
 function preload() {
     robotoLightFont = loadFont("web/assets/roboto-light.ttf");
     robotoRegularFont = loadFont("web/assets/roboto-regular.ttf");
+    correctAudio = loadSound("web/assets/correct_audio.mp3");
+    incorrectAudio = loadSound("web/assets/incorrect_audio.mp3");
 }
 
 function setup() {
@@ -190,6 +289,15 @@ function onCanvasClick() {
     var clickPos = new Pos(mouseX, mouseY);
 
     var correct = isClickCorrect(A, W, n, mainTarget, clickPos);
+    if (correct && !isMute) {
+        console.log("playing 1");
+        correctAudio.play();
+    }
+    else if (beginFlag && !isMute) {
+        console.log("playing 2");
+        incorrectAudio.play();
+    }
+
     if (correct && !beginFlag) {
         beginFlag = true;
         lastClickTime = millis();
@@ -683,6 +791,25 @@ function saveAsTextFile(text, filename) {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+}
+
+// Checks if all elements in the array are numbers
+function isArrayOfNumbers(array) {
+    for (var i = 0; i < array.length; i++) {
+        if (isNaN(array[i])) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// Parses an array of stringed numbers into numbers
+function parseArrayOfNumbers(array) {
+    var parsedArray = [];
+    for (var i = 0; i < array.length; i++) {
+        parsedArray.push(parseInt(array[i]));
+    }
+    return parsedArray;
 }
 
 /*
