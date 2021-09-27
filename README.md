@@ -47,9 +47,20 @@ Upon successful server hosting, the terminal/command prompt should return the fo
 ```
 _WebFitt_ can now be launched by opening any browser and entering the address `http://127.0.0.1:5000`
 
-![WebFitt Main Menu Screenshot](https://github.com/adildsw/WebFitt/blob/main/web/assets/screenshot_main.png)
+<!-- ![WebFitt Main Menu Screenshot](https://github.com/adildsw/WebFitt/blob/main/web/assets/screenshot_main.png)
 ![WebFitt Task Screenshot](https://github.com/adildsw/WebFitt/blob/main/web/assets/screenshot_task.png)
-![WebFitt Result Screenshot](https://github.com/adildsw/WebFitt/blob/main/web/assets/screenshot_result.png)
+![WebFitt Result Screenshot](https://github.com/adildsw/WebFitt/blob/main/web/assets/screenshot_result.png) -->
+
+<kbd align="center">
+  <img src="https://github.com/adildsw/WebFitt/blob/main/web/assets/screenshot_main.png" />
+</kbd>
+<kbd align="center">
+  <img src="https://github.com/adildsw/WebFitt/blob/main/web/assets/screenshot_task.png" />
+</kbd>
+
+<kbd align="center">
+  <img src="https://github.com/adildsw/WebFitt/blob/main/web/assets/screenshot_result.png" />
+</kbd>
 
 ## Configuration
 _WebFitt_ offers some configurable parameters:
