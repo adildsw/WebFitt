@@ -38,15 +38,21 @@ var clickData = [];
 var aggregateTaskResult = [];
 var overallMeanResult = [];
 var servdown = false;
+var resultsview = true;
 
-let clickDataHeader = ["Participant Code", "Session Code", "Condition Code", "Hand Dominance", "Pointing Device", "Device Experience", "Amplitude", "Width", "Number of Targets", "Task Index", "Click Number", "Click Time (ms)", "Source X", "Source Y", "Target X", "Target Y", "Click X", "Click Y", "Source-Target Distance", "dx", "Incorrect"];
-let aggregateTaskResultHeader = ["Participant Code", "Session Code", "Condition Code", "Hand Dominance", "Pointing Device", "Device Experience", "Amplitude", "Width", "Number of Targets", "Task Index", "Mean Time (ms)", "Error (%)", "SDx", "We", "IDe", "Ae", "Throughput (bps)"];
-let overallMeanResultHeader = ["Participant Code", "Session Code", "Condition Code", "Hand Dominance", "Pointing Device", "Device Experience", "Mean Click Time (ms)", "Mean Click Error (%)", "Mean Throughput (bps)"];
+let clickDataHeader = ["Participant Code", "Session Code", "Condition Code", "Hand Dominance", "Pointing Device", "Device Experience", "Amplitude", "Width", "Number of Targets", "Task Index", "Click Number", "Completion Time (ms)", "Source X", "Source Y", "Target X", "Target Y", "Click X", "Click Y", "Source-Target Distance", "dx", "Incorrect"];
+let aggregateTaskResultHeader = ["Participant Code", "Session Code", "Condition Code", "Hand Dominance", "Pointing Device", "Device Experience", "Amplitude", "Width", "Number of Targets", "Task Index", "Mean Completion Time (ms)", "Error (%)", "SDx", "We", "IDe", "Ae", "Throughput (bps)"];
+let overallMeanResultHeader = ["Participant Code", "Session Code", "Condition Code", "Hand Dominance", "Pointing Device", "Device Experience", "Mean Completion Time (ms)", "Mean Click Error (%)", "Mean Throughput (bps)"];
 
 $(document).ready(function() {
-    // Retrieving server download status from metadata
-    if ($("#server-download").data()["servdown"] == "True") {
+    // Retrieving server download requirement from metadata
+    if ($("#webfitt-meta").data()["servdown"] == "True") {
         servdown = true;
+    }
+
+    // Retrieving result view requirement from metadata
+    if ($("#webfitt-meta").data()["resultsview"] == "False") {
+        resultsview = false;
     }
 
     // Change GitHub logo on hover
@@ -81,13 +87,6 @@ $(document).ready(function() {
     $(document).on("click", "canvas", function() {
         if (isTaskRunning) {
             onCanvasClick();
-        }
-    });
-
-    // Write jquery function to check keypress
-    $(document).keypress(function(e) {
-        if (e.which == 32) {
-            beginApp([100], [50, 90], 7);
         }
     });
 
@@ -232,6 +231,8 @@ function preload() {
     robotoRegularFont = loadFont("web/assets/roboto-regular.ttf");
     correctAudio = loadSound("web/assets/correct_audio.mp3");
     incorrectAudio = loadSound("web/assets/incorrect_audio.mp3");
+    correctAudio.setVolume(0.2);
+    incorrectAudio.setVolume(0.2);
 }
 
 function setup() {
@@ -247,7 +248,12 @@ function draw() {
         renderInfoText();
     }
     else if (isTaskFinished) {
-        renderTaskCompleteMessage();
+        if (resultsview) {
+            renderTaskCompleteMessage();
+        }
+        else {
+            window.location.reload();
+        }
     }
     else {
         background(255);
@@ -271,7 +277,10 @@ function runPipeline() {
             computeAggregateTaskResult();
             computeOverallMeanResult();
             var filename = "WebFitts_" + participantCode + "_" + sessionCode + "_" + conditionCode + "_" + pointingDevice;
-            saveAsTextFile(generateResultString(), filename + ".csv");
+            // saveAsTextFile(generateResultString(), filename + ".csv");
+            saveAsTextFile(generateClickResultString(), filename + ".wf1");
+            saveAsTextFile(generateTaskResultString(), filename + ".wf2");
+            saveAsTextFile(generateMeanResultString(), filename + ".wf3");
             if (servdown) {
                 uploadResult();
             }
@@ -290,11 +299,9 @@ function onCanvasClick() {
 
     var correct = isClickCorrect(A, W, n, mainTarget, clickPos);
     if (correct && !isMute) {
-        console.log("playing 1");
         correctAudio.play();
     }
     else if (beginFlag && !isMute) {
-        console.log("playing 2");
         incorrectAudio.play();
     }
 
@@ -563,6 +570,33 @@ function computeOverallMeanResult() {
     overallMeanResult.push(ovRes);
 }
 
+// Generates individual click result string
+function generateClickResultString(){
+    var resultString = clickDataHeader.join(",") + "\n";
+    for(var i = 0; i < clickData.length; i++){
+        resultString += clickData[i].join(",") + "\n";
+    }
+    return resultString;
+}
+
+// Generates aggregate task result string
+function generateTaskResultString(){
+    var resultString = aggregateTaskResultHeader.join(",") + "\n";
+    for(var i = 0; i < aggregateTaskResult.length; i++){
+        resultString += aggregateTaskResult[i].join(",") + "\n";
+    }
+    return resultString;
+}
+
+// Generates overall mean result string
+function generateMeanResultString(){
+    var resultString = overallMeanResultHeader.join(",") + "\n";
+    for(var i = 0; i < overallMeanResult.length; i++){
+        resultString += overallMeanResult[i].join(",") + "\n";
+    }
+    return resultString;
+}
+
 // Concatenates all the result arrays into a string and returns it
 function generateResultString() {
     var resultString = "";
@@ -585,9 +619,12 @@ function generateResultString() {
 
 // Uploads result string to the server
 function uploadResult() {
-    var result = generateResultString();
+    var clickResult = generateClickResultString();
+    var taskResult = generateTaskResultString();
+    var meanResult = generateMeanResultString();
+
     var filename = "WebFitts_" + participantCode + "_" + sessionCode + "_" + conditionCode + "_" + pointingDevice;
-    var data = "filename=" + filename + "&result=" + result;
+    var data = "filename=" + filename + "&click_result=" + clickResult + "&mean_result=" + meanResult + "&task_result=" + taskResult;
     var url = "/saveResult";
     postRequest(url, data, function() {
         console.log("Result uploaded to server!");

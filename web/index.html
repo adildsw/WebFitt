@@ -9,7 +9,7 @@
         <link rel="stylesheet" type="text/css" href="web/semantic.min.css" />
         <link rel="stylesheet" type="text/css" href="web/style.css">
         <link rel="icon" href="web/assets/icon.png" type="image/x-icon">
-        <meta id="server-download" data-servdown="{{servdown}}" />
+        <meta id="webfitt-meta" data-servdown="{{servdown}}" data-resultsview="{{resultsview}}"/>
         <title>WebFitt | A Web-Based 2D Fitt's Law Test</title>
     </head>
     <body>
@@ -138,11 +138,11 @@
                             <div class="three fields">
                                 <div class="field" title="Supports multiple comma-separated values">
                                     <label>Amplitude (A)</label>
-                                    <input id="amplitude" placeholder="Amplitude" type="text" value="250, 400">
+                                    <input id="amplitude" placeholder="Amplitude" type="text" value="400">
                                 </div>
                                 <div class="field" title="Supports multiple comma-separated values">
                                     <label>Width (W)</label>
-                                    <input id="width" placeholder="Session Code" type="text" value="50, 90">
+                                    <input id="width" placeholder="Session Code" type="text" value="100">
                                 </div>
                                 <div class="field">
                                     <label>Number of Targets (n)</label>
@@ -153,7 +153,7 @@
                                         <option value="9">9</option>
                                         <option value="11">11</option>
                                         <option value="13">13</option>
-                                        <option value="15">15</option>
+                                        <option value="15" selected="selected">15</option>
                                         <option value="17">17</option>
                                         <option value="19">19</option>
                                         <option value="21">21</option>
