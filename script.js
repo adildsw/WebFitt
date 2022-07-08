@@ -57,16 +57,16 @@ $(document).ready(function() {
 
     // Change GitHub logo on hover
     $("#github_logo").hover(function() {
-        $("#github_logo").attr("src", "web/assets/github_hover.png");
+        $("#github_logo").attr("src", "assets/github_hover.png");
     }, function() {
-        $("#github_logo").attr("src", "web/assets/github_default.png");
+        $("#github_logo").attr("src", "assets/github_default.png");
     });
 
     // Change header logo on hover
     $("#header_logo").hover(function() {
-        $("#header_logo").attr("src", "web/assets/header_logo_hover.png");
+        $("#header_logo").attr("src", "assets/header_logo_hover.png");
     }, function() {
-        $("#header_logo").attr("src", "web/assets/header_logo.png");
+        $("#header_logo").attr("src", "assets/header_logo.png");
     });
 
     // Change volume icon on hover
@@ -227,10 +227,10 @@ function beginApp(a_list, w_list, n) {
 }
 
 function preload() {
-    robotoLightFont = loadFont("web/assets/roboto-light.ttf");
-    robotoRegularFont = loadFont("web/assets/roboto-regular.ttf");
-    correctAudio = loadSound("web/assets/correct_audio.mp3");
-    incorrectAudio = loadSound("web/assets/incorrect_audio.mp3");
+    robotoLightFont = loadFont("assets/roboto-light.ttf");
+    robotoRegularFont = loadFont("assets/roboto-regular.ttf");
+    correctAudio = loadSound("assets/correct_audio.mp3");
+    incorrectAudio = loadSound("assets/incorrect_audio.mp3");
     correctAudio.setVolume(0.2);
     incorrectAudio.setVolume(0.2);
 }
@@ -726,18 +726,18 @@ function windowResized() {
 function renderVolumeImage(isHovering) {
     if (isHovering) {
         if (isMute) {
-            $("#volume_icon").attr("src", "web/assets/volume_mute_hover.png");
+            $("#volume_icon").attr("src", "assets/volume_mute_hover.png");
         }
         else {
-            $("#volume_icon").attr("src", "web/assets/volume_on_hover.png");
+            $("#volume_icon").attr("src", "assets/volume_on_hover.png");
         }
     } 
     else {
         if (isMute) {
-            $("#volume_icon").attr("src", "web/assets/volume_mute_default.png");
+            $("#volume_icon").attr("src", "assets/volume_mute_default.png");
         }
         else {
-            $("#volume_icon").attr("src", "web/assets/volume_on_default.png");
+            $("#volume_icon").attr("src", "assets/volume_on_default.png");
         }
     }
 }
@@ -746,18 +746,18 @@ function renderVolumeImage(isHovering) {
 function renderTrailImage(isHovering) {
     if (isHovering) {
         if (isTrailing) {
-            $("#trail_icon").attr("src", "web/assets/trail_on_hover.png");
+            $("#trail_icon").attr("src", "assets/trail_on_hover.png");
         }
         else {
-            $("#trail_icon").attr("src", "web/assets/trail_off_hover.png");
+            $("#trail_icon").attr("src", "assets/trail_off_hover.png");
         }
     } 
     else {
         if (isTrailing) {
-            $("#trail_icon").attr("src", "web/assets/trail_on_default.png");
+            $("#trail_icon").attr("src", "assets/trail_on_default.png");
         }
         else {
-            $("#trail_icon").attr("src", "web/assets/trail_off_default.png");
+            $("#trail_icon").attr("src", "assets/trail_off_default.png");
         }
     }
 }

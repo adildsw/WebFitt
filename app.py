@@ -6,7 +6,7 @@ from time import time
 
 from flask import Flask, render_template, request, Response
 
-app = Flask(__name__, static_folder="web", template_folder="web")
+app = Flask(__name__, static_folder="", template_folder="")
 
 servdown = True
 resultsview = True
