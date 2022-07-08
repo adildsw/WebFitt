@@ -1,7 +1,7 @@
 # WebFitt
 
 <p align="center">
-  <img src="https://github.com/adildsw/WebFitt/blob/main/web/assets/banner_alt_zoomed.png" />
+  <img src="https://github.com/adildsw/WebFitt/blob/main/assets/banner_alt_zoomed.png" />
 </p>
 
 _WebFitt_ is a web-based Fitts' law testing application inspired by Scott MacKenzie's [GoFitts](http://www.yorku.ca/mack/FittsLawSoftware/) application.
@@ -47,19 +47,19 @@ Upon successful server hosting, the terminal/command prompt should return the fo
 ```
 _WebFitt_ can now be launched by opening any browser and entering the address `http://127.0.0.1:5000`
 
-<!-- ![WebFitt Main Menu Screenshot](https://github.com/adildsw/WebFitt/blob/main/web/assets/screenshot_main.png)
-![WebFitt Task Screenshot](https://github.com/adildsw/WebFitt/blob/main/web/assets/screenshot_task.png)
-![WebFitt Result Screenshot](https://github.com/adildsw/WebFitt/blob/main/web/assets/screenshot_result.png) -->
+<!-- ![WebFitt Main Menu Screenshot](https://github.com/adildsw/WebFitt/blob/main/assets/screenshot_main.png)
+![WebFitt Task Screenshot](https://github.com/adildsw/WebFitt/blob/main/assets/screenshot_task.png)
+![WebFitt Result Screenshot](https://github.com/adildsw/WebFitt/blob/main/assets/screenshot_result.png) -->
 
 <kbd align="center">
-  <img src="https://github.com/adildsw/WebFitt/blob/main/web/assets/screenshot_main.png" />
+  <img src="https://github.com/adildsw/WebFitt/blob/main/assets/screenshot_main.png" />
 </kbd>
 <kbd align="center">
-  <img src="https://github.com/adildsw/WebFitt/blob/main/web/assets/screenshot_task.png" />
+  <img src="https://github.com/adildsw/WebFitt/blob/main/assets/screenshot_task.png" />
 </kbd>
 
 <kbd align="center">
-  <img src="https://github.com/adildsw/WebFitt/blob/main/web/assets/screenshot_result.png" />
+  <img src="https://github.com/adildsw/WebFitt/blob/main/assets/screenshot_result.png" />
 </kbd>
 
 ## Configuration
