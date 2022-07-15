@@ -227,8 +227,9 @@ function beginApp(a_list, w_list, n) {
 }
 
 function preload() {
-    robotoLightFont = loadFont("assets/roboto-light.ttf");
-    robotoRegularFont = loadFont("assets/roboto-regular.ttf");
+	// textFont('Roboto');
+    // robotoLightFont = loadFont("https://github.com/adildsw/WebFitt/blob/main/assets/roboto-light.ttf?raw=true");
+    // robotoRegularFont = loadFont("https://github.com/adildsw/WebFitt/blob/main/assets/roboto-regular.ttf?raw=true");
     correctAudio = loadSound("assets/correct_audio.mp3");
     incorrectAudio = loadSound("assets/incorrect_audio.mp3");
     correctAudio.setVolume(0.2);
@@ -408,10 +409,10 @@ function renderInfoText() {
     noStroke();
     textSize(28);
     fill(0);
-    textFont(robotoRegularFont);
+    textStyle(BOLD); // textFont(robotoRegularFont);
     textAlign(LEFT);
     text("Task " + (taskIdx + 1) + " of " + tasks.length, width - 400, 50);
-    textFont(robotoLightFont);
+    textStyle(NORMAL); // textFont(robotoLightFont);
     text("Amplitude " + tasks[taskIdx].A + " | Width " + tasks[taskIdx].W, width - 400, 85);
 }
 
@@ -422,10 +423,10 @@ function renderTaskCompleteMessage() {
     noStroke();
     textSize(28);
     fill(0);
-    textFont(robotoRegularFont);
+    textStyle(BOLD); // textFont(robotoRegularFont);
     textAlign(LEFT);
     text("Overall Mean Result", width - 400, 50);
-    textFont(robotoLightFont);
+    textStyle(NORMAL); // textFont(robotoLightFont);
     text("Mean Time (ms): " + Math.round(overallMeanResult[0][6] * 100) / 100, width - 400, 85);
     text("Mean Error (%): " + Math.round(overallMeanResult[0][7] * 100) / 100, width - 400, 120);
     text("Mean Throughput (bps): " + Math.round(overallMeanResult[0][8] * 100) / 100, width - 400, 155);
@@ -433,7 +434,7 @@ function renderTaskCompleteMessage() {
     noStroke();
     textSize(64);
     fill(0);
-    textFont(robotoLightFont);
+    textStyle(NORMAL); // textFont(robotoLightFont);
     textAlign(CENTER, CENTER);
     if (tasks.length == 1) {
         text("Task Complete!", width / 2, height / 2);
