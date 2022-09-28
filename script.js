@@ -837,8 +837,11 @@ function saveAsZipFile(filename) {
 	zip.file(filename + ".wf1", generateClickResultString());
 	zip.file(filename + ".wf2", generateTaskResultString());
 	zip.file(filename + ".wf3", generateMeanResultString());
-	zip.generateAsync({type:"base64"}).then(function (content) {
-		 location.href="data:application/zip;base64," + content;
+	// zip.generateAsync({type:"base64"}).then(function (content) {
+		 // location.href="data:application/zip;base64," + content;
+	// });
+	zip.generateAsync({type:"blob"}).then(function (content) {
+		 saveAs(content, filename + ".zip"); // FileSaver.js Library Function
 	});
 }
 
