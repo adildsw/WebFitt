@@ -278,9 +278,10 @@ function runPipeline() {
             computeOverallMeanResult();
             var filename = "WebFitts_" + participantCode + "_" + sessionCode + "_" + conditionCode + "_" + pointingDevice;
             // saveAsTextFile(generateResultString(), filename + ".csv");
-            saveAsTextFile(generateClickResultString(), filename + ".wf1");
-            saveAsTextFile(generateTaskResultString(), filename + ".wf2");
-            saveAsTextFile(generateMeanResultString(), filename + ".wf3");
+            // saveAsTextFile(generateClickResultString(), filename + ".wf1");
+            // saveAsTextFile(generateTaskResultString(), filename + ".wf2");
+            // saveAsTextFile(generateMeanResultString(), filename + ".wf3");
+			saveAsZipFile(filename);
             if (servdown) {
                 uploadResult();
             }
@@ -818,7 +819,7 @@ function postRequest(url, data, callback) {
     request.send(data);
 }
 
-// Function to save string as text file
+// Function to save string as a text file
 function saveAsTextFile(text, filename) {
     var blob = new Blob([text], {type: "text/plain;charset=utf-8"});
     var a = document.createElement("a");
@@ -828,6 +829,17 @@ function saveAsTextFile(text, filename) {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+}
+
+// Function to save results as a zip file
+function saveAsZipFile(filename) {
+	var zip = new JSZip();
+	zip.file(filename + ".wf1", generateClickResultString());
+	zip.file(filename + ".wf2", generateTaskResultString());
+	zip.file(filename + ".wf3", generateMeanResultString());
+	zip.generateAsync({type:"base64"}).then(function (content) {
+		 location.href="data:application/zip;base64," + content;
+	});
 }
 
 // Checks if all elements in the array are numbers
