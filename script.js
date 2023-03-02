@@ -24,6 +24,10 @@ var isTaskRunning = false;
 var isTaskFinished = false;
 var beginFlag = false;
 
+var isCalibrating = false;
+var calibrationScale = 1;
+let calibrationSlider;
+
 var participantCode = "";
 var sessionCode = "";
 var conditionCode = "";
@@ -45,6 +49,8 @@ let aggregateTaskResultHeader = ["Participant Code", "Session Code", "Condition 
 let overallMeanResultHeader = ["Participant Code", "Session Code", "Condition Code", "Hand Dominance", "Pointing Device", "Device Experience", "Mean Completion Time (ms)", "Mean Click Error (%)", "Mean Throughput (bps)"];
 
 $(document).ready(function() {
+    $("#main_menu").hide();
+
     // Retrieving server download requirement from metadata
     if ($("#webfitt-meta").data()["servdown"] == "True") {
         servdown = true;
@@ -67,6 +73,13 @@ $(document).ready(function() {
         $("#header_logo").attr("src", "assets/header_logo_hover.png");
     }, function() {
         $("#header_logo").attr("src", "assets/header_logo.png");
+    });
+
+    // Change calibrate icon on hover
+    $("#calibration_icon").hover(function() {
+        $("#calibration_icon").attr("src", "assets/calibrate_hover.png");
+    }, function() {
+        $("#calibration_icon").attr("src", "assets/calibrate.png");
     });
 
     // Change volume icon on hover
@@ -96,12 +109,19 @@ $(document).ready(function() {
         if (id == "volume_icon") {
             isMute = !isMute;
             renderVolumeImage(true);
-            
         }
         else if (id == "trail_icon") {
             isTrailing = !isTrailing;
             renderTrailImage(true);
         }
+        else if (id == "calibration_icon") {
+            beginCalibration();
+        }
+    });
+
+    $(document).on("click", "#confirm_calibration_btn", function() {
+        setCalibrationValue();
+        window.location.reload();
     });
 
     // Refresh page when header-logo is clicked
@@ -199,7 +219,24 @@ $(document).ready(function() {
         $(".servdown-policy").hide();
     }
 
+    // If the display has never been calibrated before, begin the calibration process
+    if (isDisplayCalibrated()) {
+        calibrationScale = getCalibrationValue();
+    } else {
+        beginCalibration();
+    }
+
 });
+
+// Begins the display calibration process
+function beginCalibration() {
+    isCalibrating = true;
+    $("#main_menu").hide();
+    $(".ui_item").hide();
+    $("#header_logo").show();
+    $("#confirm_calibration_btn").show();
+    slider.value(calibrationScale);
+}
 
 /*
  * Starts the WebFitt Application.
@@ -227,6 +264,7 @@ function beginApp(a_list, w_list, n) {
 }
 
 function preload() {
+    creditCardImg = loadImage("assets/credit_card.png");
     robotoLightFont = loadFont("./assets/roboto-light.ttf");
     robotoRegularFont = loadFont("./assets/roboto-regular.ttf");
     correctAudio = loadSound("assets/correct_audio.mp3");
@@ -239,10 +277,21 @@ function setup() {
     createCanvas(windowWidth, windowHeight);
     frameRate(60);
     background(255);
+
+    slider = createSlider(0.5, 2, 1, 0.01);
+    slider.style('width', '200px');
+    slider.style('display', 'none');
+    slider.position(width / 2 - 100, height / 2 + 320);
+    $("#confirm_calibration_btn").css({'width': 150, 'top': height / 2 + 350, 'left': width / 2 - 75});
 }
   
 function draw() {
-    if (isTaskRunning) {
+    background(255);
+
+    if (isCalibrating) {
+        renderCalibrationPanel();
+    }
+    else if (isTaskRunning) {
         renderTrail();
         runPipeline();
         renderInfoText();
@@ -256,13 +305,34 @@ function draw() {
         }
     }
     else {
-        background(255);
+        $("#main_menu").show();
     }
+}
+
+function renderCalibrationPanel() {
+    background(255);
+
+    noStroke();
+    textSize(64);
+    fill(0);
+    textFont(robotoRegularFont);
+    textAlign(CENTER, CENTER);
+    text("Display Calibration", width / 2, 140);
+    textFont(robotoLightFont);
+    textSize(32);
+    text("Please adjust the slider below so that the card on your screen matches a physical credit card.", width / 2, 210);
+    
+    let val = slider.value();
+    slider.style('display', 'block');
+
+    cardWidth = 500 * val;
+    cardHeight = cardWidth / 1.586
+    image(creditCardImg, (width / 2) - (cardWidth / 2), (height / 2) - (cardHeight / 2) + 30, cardWidth, cardHeight);
 }
 
 function runPipeline() {
     var A = tasks[taskIdx].A;
-    var W = tasks[taskIdx].W;
+    var W = tasks[taskIdx].W ;
     var n = tasks[taskIdx].n;
     var mainTarget = getTargetIdxFromClickNumber(clickNumber, n);
     renderTargets(A, W, n, mainTarget);
@@ -277,10 +347,6 @@ function runPipeline() {
             computeAggregateTaskResult();
             computeOverallMeanResult();
             var filename = "WebFitts_" + participantCode + "_" + sessionCode + "_" + conditionCode + "_" + pointingDevice;
-            // saveAsTextFile(generateResultString(), filename + ".csv");
-            // saveAsTextFile(generateClickResultString(), filename + ".wf1");
-            // saveAsTextFile(generateTaskResultString(), filename + ".wf2");
-            // saveAsTextFile(generateMeanResultString(), filename + ".wf3");
 			saveAsZipFile(filename);
             if (servdown) {
                 uploadResult();
@@ -333,6 +399,14 @@ function onCanvasClick() {
  * 
  */
 function generateTaskSequence(a_list, w_list, n) {
+    // Calibrating amplitude and width values
+    for (var i = 0; i < a_list.length; i++) {
+        a_list[i] = a_list[i] * calibrationScale;
+    }
+    for (var i = 0; i < w_list.length; i++) {
+        w_list[i] = w_list[i] * calibrationScale;
+    }
+
     // Creating an array with a cross product of a_list and w_list
     var taskSequence = [];
     for (var i = 0; i < a_list.length; i++) {
@@ -721,6 +795,8 @@ function getTargetPosition(A, n, idx){
 // Resizes the canvas to fit the window on resize
 function windowResized() {
     resizeCanvas(windowWidth, windowHeight);
+    slider.position(width / 2 - 100, height / 2 + 320);
+    $("#confirm_calibration_btn").css({'width': 150, 'top': height / 2 + 350, 'left': width / 2 - 75});
 }
 
 // Render volume image based on hover state and click
@@ -764,6 +840,30 @@ function renderTrailImage(isHovering) {
 }
 
 /*
+|----------------------------------------------------
+| CALIBRATION FUNCTIONS
+|----------------------------------------------------
+*/
+
+// Checks if the system has been calibrated before
+function isDisplayCalibrated() {
+    if (getCookie("webfitt-calibration") == "") return false;
+    else return true;
+}
+
+// Sets the calibration value and saves it to the cookie
+function setCalibrationValue() {
+    calibrationScale = slider.value();
+    setCookie("webfitt-calibration", calibrationScale, 365);
+    alert("Display calibrated!")
+}
+
+// Gets the calibration value from the cookie
+function getCalibrationValue() {
+    return getCookie("webfitt-calibration");
+}
+
+/*
  |----------------------------------------------------
  | HELPER FUNCTIONS
  |----------------------------------------------------
@@ -795,18 +895,6 @@ function randInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1) + min);
 }
 
-// Performs a get request to the given url and calls the callback function upon success
-function getRequest(url, callback)
-{
-    var request = new XMLHttpRequest();
-    request.onreadystatechange = function() { 
-        if (request.readyState == 4 && request.status == 200)
-            callback(request.responseText);
-    }
-    request.open("GET", url, true);
-    request.send(null);
-}
-
 // Performs a post request to the given url and calls the callback function upon success
 function postRequest(url, data, callback) {
     var request = new XMLHttpRequest();
@@ -817,18 +905,6 @@ function postRequest(url, data, callback) {
     request.open("POST", url, true);
     request.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
     request.send(data);
-}
-
-// Function to save string as a text file
-function saveAsTextFile(text, filename) {
-    var blob = new Blob([text], {type: "text/plain;charset=utf-8"});
-    var a = document.createElement("a");
-    a.href = window.URL.createObjectURL(blob);
-    a.download = filename;
-    a.style.display = "none";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
 }
 
 // Function to save results as a zip file
@@ -862,6 +938,31 @@ function parseArrayOfNumbers(array) {
         parsedArray.push(parseInt(array[i]));
     }
     return parsedArray;
+}
+
+// Utility function to get cookie value
+function getCookie(cname) {
+    var name = cname + "=";
+    var decodedCookie = decodeURIComponent(document.cookie);
+    var ca = decodedCookie.split(';');
+    for(var i = 0; i <ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0) == ' ') {
+            c = c.substring(1);
+        }
+        if (c.indexOf(name) == 0) {
+            return c.substring(name.length, c.length);
+        }
+    }
+    return "";
+}
+
+// Utility function to set cookie value
+function setCookie(cname, cvalue, exdays) {
+    var d = new Date();
+    d.setTime(d.getTime() + (exdays*24*60*60*1000));
+    var expires = "expires="+ d.toUTCString();
+    document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
 }
 
 /*
