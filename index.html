@@ -190,11 +190,29 @@
         <div id="ui_elements">
             <img class="ui_item" id="header_logo" src="assets/header_logo.png" alt="WebFitt Header Logo" />
             <img class="ui_item" id="calibration_icon" src="assets/calibrate.png" alt="Calibrate Icon" title="Calibrate Display (C)" />
-            <img class="ui_item" id="volume_icon" src="assets/volume_on_default.png" alt="Volume Icon" title="Toggle Sound (S)" />
+            <img class="ui_item" id="volume_icon" src="assets/volume_mute_default.png" alt="Volume Icon" title="Toggle Sound (S)" />
             <img class="ui_item" id="trail_icon" src="assets/trail_off_default.png" alt="Volume Icon" title="Toggle Trail (T)" />
             <img class="ui_item" id="github_logo" src="assets/github_default.png" alt="GitHub Logo" title="Source Code" />
             <div id="confirm_calibration_btn" class="ui primary button">
                 Set Calibration
+            </div>
+            <div id="calibration-modal" class="ui mini modal">
+                <div class="header">Cookie Preferences</div>
+                <div class="content">
+                    <p>Display calibration is set!<br/><br/>WebFitt uses cookies to save your display calibration settings so you don't need to set them the next time you use it. Would you like to accept cookie?</p>
+                </div>
+                <div class="actions">
+                    <button class="ui cancel button">No, Thanks</button>
+                    <button class="ui approve primary button">Yes, Accept Cookie</button>
+                </div>
+            </div>
+            <div id="calibrated-modal" class="ui mini modal">
+                <div class="content">
+                    <p>Your display calibration is set!</p>
+                </div>
+                <div class="actions">
+                    <button class="ui approve primary button">Return to Main Menu</button>
+                </div>
             </div>
         </div>
     </body>

@@ -18,7 +18,7 @@ var taskIdx = 0;
 
 var clickNumber = 0;
 
-var isMute = false;
+var isMute = true;
 var isTrailing = false;
 var isTaskRunning = false;
 var isTaskFinished = false;
@@ -121,7 +121,15 @@ $(document).ready(function() {
 
     $(document).on("click", "#confirm_calibration_btn", function() {
         setCalibrationValue();
-        window.location.reload();
+        if (getCookie("webfitt-calibration") == "") {
+            $('#calibration-modal').modal('show');
+        } else {
+            setCalibrationCookie(calibrationScale);
+            $('#calibrated-modal').modal('show');
+        }
+        // setCookie("webfitt-calibration", calibrationScale, 365);
+        // alert("Display calibrated!")
+        // window.location.reload();
     });
 
     // Refresh page when header-logo is clicked
@@ -133,6 +141,33 @@ $(document).ready(function() {
     $("#github_logo").click(function() {
         window.open("https://github.com/adildsw/WebFitt");
     });
+
+    $('#calibration-modal')
+        .modal({
+            closable: false,
+            onApprove: function() {
+                setCalibrationCookie(calibrationScale);
+                console.log('Accept clicked');
+                endCalibration();
+                return true;
+            },
+            onDeny: function() {
+                console.log('Reject clicked');
+                endCalibration();
+                return true;
+            }
+        });
+
+    $('#calibrated-modal')
+        .modal({
+            closable: false,
+            onApprove: function() {
+                setCalibrationCookie(calibrationScale);
+                console.log('Accept clicked');
+                endCalibration();
+                return true;
+            }
+        });
 
     // Validate input and starting the task
     $(document).on("click", "#start-test-btn", function() {
@@ -228,6 +263,10 @@ $(document).ready(function() {
 
 });
 
+function setCalibrationCookie(calibrationScale) {
+    setCookie("webfitt-calibration", calibrationScale, 365);
+}
+
 // Begins the display calibration process
 function beginCalibration() {
     isCalibrating = true;
@@ -236,6 +275,17 @@ function beginCalibration() {
     $("#header_logo").show();
     $("#confirm_calibration_btn").show();
     slider.value(calibrationScale);
+}
+
+function endCalibration() {
+    isCalibrating = false;
+    $("#main_menu").show();
+    $(".ui_item").show();
+    $("#header_logo").hide();
+    $("#confirm_calibration_btn").hide();
+    slider.value(calibrationScale);
+    // hide slider
+    slider.style('display', 'none');
 }
 
 /*
@@ -854,8 +904,6 @@ function isDisplayCalibrated() {
 // Sets the calibration value and saves it to the cookie
 function setCalibrationValue() {
     calibrationScale = slider.value();
-    setCookie("webfitt-calibration", calibrationScale, 365);
-    alert("Display calibrated!")
 }
 
 // Gets the calibration value from the cookie
