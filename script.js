@@ -14,6 +14,7 @@ class Pos {
 }
 
 var tasks = [];
+var uncalibratedTasks = [];
 var taskIdx = 0;
 
 var clickNumber = 0;
@@ -127,9 +128,6 @@ $(document).ready(function() {
             setCalibrationCookie(calibrationScale);
             $('#calibrated-modal').modal('show');
         }
-        // setCookie("webfitt-calibration", calibrationScale, 365);
-        // alert("Display calibrated!")
-        // window.location.reload();
     });
 
     // Refresh page when header-logo is clicked
@@ -147,12 +145,10 @@ $(document).ready(function() {
             closable: false,
             onApprove: function() {
                 setCalibrationCookie(calibrationScale);
-                console.log('Accept clicked');
                 endCalibration();
                 return true;
             },
             onDeny: function() {
-                console.log('Reject clicked');
                 endCalibration();
                 return true;
             }
@@ -163,7 +159,6 @@ $(document).ready(function() {
             closable: false,
             onApprove: function() {
                 setCalibrationCookie(calibrationScale);
-                console.log('Accept clicked');
                 endCalibration();
                 return true;
             }
@@ -304,6 +299,21 @@ function beginApp(a_list, w_list, n) {
     aggregateTaskResult = [];
     overallMeanResult = [];
     tasks = generateTaskSequence(a_list, w_list, n);
+    uncalibratedTasks = generateUncalibratedTaskSequence(a_list, w_list, n);
+
+    // Shuffling the array
+    for (var i = tasks.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var temp = tasks[i];
+        tasks[i] = tasks[j];
+        tasks[j] = temp;
+
+        var temp = uncalibratedTasks[i];
+        uncalibratedTasks[i] = uncalibratedTasks[j];
+        uncalibratedTasks[j] = temp;
+    }
+
+
     if (tasks.length == 0) {
         alert("ERROR: No task to run.");
     }
@@ -450,12 +460,27 @@ function onCanvasClick() {
  */
 function generateTaskSequence(a_list, w_list, n) {
     // Calibrating amplitude and width values
+    var a_list_temp = []
+    var w_list_temp = []
     for (var i = 0; i < a_list.length; i++) {
-        a_list[i] = a_list[i] * calibrationScale;
+        a_list_temp.push(a_list[i] * calibrationScale);
     }
     for (var i = 0; i < w_list.length; i++) {
-        w_list[i] = w_list[i] * calibrationScale;
+        w_list_temp.push(w_list[i] * calibrationScale);
     }
+
+    // Creating an array with a cross product of a_list and w_list
+    var taskSequence = [];
+    for (var i = 0; i < a_list_temp.length; i++) {
+        for (var j = 0; j < w_list_temp.length; j++) {
+            taskSequence.push(new Task(a_list_temp[i], w_list_temp[j], n));
+        }
+    }
+
+    return taskSequence;
+}
+
+function generateUncalibratedTaskSequence(a_list, w_list, n) {
 
     // Creating an array with a cross product of a_list and w_list
     var taskSequence = [];
@@ -463,14 +488,6 @@ function generateTaskSequence(a_list, w_list, n) {
         for (var j = 0; j < w_list.length; j++) {
             taskSequence.push(new Task(a_list[i], w_list[j], n));
         }
-    }
-
-    // Shuffling the array
-    for (var i = taskSequence.length - 1; i > 0; i--) {
-        var j = Math.floor(Math.random() * (i + 1));
-        var temp = taskSequence[i];
-        taskSequence[i] = taskSequence[j];
-        taskSequence[j] = temp;
     }
 
     return taskSequence;
@@ -537,7 +554,8 @@ function renderInfoText() {
     textAlign(LEFT);
     text("Task " + (taskIdx + 1) + " of " + tasks.length, width - 400, 50);
     textFont(robotoLightFont);
-    text("Amplitude " + tasks[taskIdx].A + " | Width " + tasks[taskIdx].W, width - 400, 85);
+    console.log(tasks, uncalibratedTasks);
+    text("Amplitude " + uncalibratedTasks[taskIdx].A + " | Width " + uncalibratedTasks[taskIdx].W, width - 400, 85);
 }
 
 // Renders a message and aggregate info when the task(s) are complete
@@ -581,9 +599,9 @@ function renderTaskCompleteMessage() {
  * 
  */
 function computeClickData(clickPos) {
-    var A = tasks[taskIdx].A;
-    var W = tasks[taskIdx].W;
-    var n = tasks[taskIdx].n;
+    var A = uncalibratedTasks[taskIdx].A;
+    var W = uncalibratedTasks[taskIdx].W;
+    var n = uncalibratedTasks[taskIdx].n;
     var clickTime = currentClickTime - lastClickTime;
     var sourcePos = getTargetPosition(A, n, getTargetIdxFromClickNumber(clickNumber - 1, n));
     var targetPos = getTargetPosition(A, n, getTargetIdxFromClickNumber(clickNumber, n));
@@ -623,9 +641,9 @@ function computeClickData(clickPos) {
 // Computes the aggregate task results and appends it to aggregateTaskResult array.
 function computeAggregateTaskResult() {
     for (var i = 0; i < tasks.length; i++) {
-        var A = tasks[i].A;
-        var W = tasks[i].W;
-        var n = tasks[i].n;
+        var A = uncalibratedTasks[i].A;
+        var W = uncalibratedTasks[i].W;
+        var n = uncalibratedTasks[i].n;
         var clickTimeList = [];
         var errorList = [];
         var dxList = [];
@@ -958,9 +976,9 @@ function postRequest(url, data, callback) {
 // Function to save results as a zip file
 function saveAsZipFile(filename) {
 	var zip = new JSZip();
-	zip.file(filename + ".wf1", generateClickResultString());
-	zip.file(filename + ".wf2", generateTaskResultString());
-	zip.file(filename + ".wf3", generateMeanResultString());
+	zip.file(filename + "_click.csv", generateClickResultString());
+	zip.file(filename + "_task.csv", generateTaskResultString());
+	zip.file(filename + "_overall.csv", generateMeanResultString());
 	// zip.generateAsync({type:"base64"}).then(function (content) {
 		 // location.href="data:application/zip;base64," + content;
 	// });
