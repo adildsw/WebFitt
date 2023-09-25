@@ -855,8 +855,8 @@ function getTargetIdxFromClickNumber(c, n) {
  */
 function getTargetPosition(A, n, idx){
     var thetaX = 360 / n;
-    var x = (width / 2) + cos(radians(idx * thetaX)) * A;
-    var y = (height / 2) + sin(radians(idx * thetaX)) * A;
+    var x = (width / 2) + cos(radians(idx * thetaX)) * A/2;
+    var y = (height / 2) + sin(radians(idx * thetaX)) * A/2;
     return new Pos(x, y);
 }
 
