@@ -481,7 +481,6 @@ function generateTaskSequence(a_list, w_list, n) {
 }
 
 function generateUncalibratedTaskSequence(a_list, w_list, n) {
-
     // Creating an array with a cross product of a_list and w_list
     var taskSequence = [];
     for (var i = 0; i < a_list.length; i++) {
@@ -554,7 +553,6 @@ function renderInfoText() {
     textAlign(LEFT);
     text("Task " + (taskIdx + 1) + " of " + tasks.length, width - 400, 50);
     textFont(robotoLightFont);
-    console.log(tasks, uncalibratedTasks);
     text("Amplitude " + uncalibratedTasks[taskIdx].A + " | Width " + uncalibratedTasks[taskIdx].W, width - 400, 85);
 }
 
@@ -610,7 +608,7 @@ function computeClickData(clickPos) {
     var sourceClickDist = sqrt(pow(clickPos.x - sourcePos.x, 2) + pow(clickPos.y - sourcePos.y, 2));
     var targetClickDist = sqrt(pow(clickPos.x - targetPos.x, 2) + pow(clickPos.y - targetPos.y, 2));
     var dx = (pow(sourceClickDist, 2) - pow(targetClickDist, 2) - pow(sourceTargetDist, 2)) / (2 * sourceTargetDist);
-    var isIncorrect = isClickCorrect(A, W, n, getTargetIdxFromClickNumber(clickNumber, n), clickPos) ? 0 : 1;
+    var isIncorrect = isClickCorrect(tasks[taskIdx].A, tasks[taskIdx].W, n, getTargetIdxFromClickNumber(clickNumber, n), clickPos) ? 0 : 1;
 
     var data = [];
     data.push(participantCode);

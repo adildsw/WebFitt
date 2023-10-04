@@ -79,4 +79,4 @@ if __name__ == "__main__":
     if args.resultsview == 0:
         resultsview = False
 
-    app.run(host=args.ip, port=args.port)
+    app.run(host=args.ip, port=args.port, debug=True)
