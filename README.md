@@ -82,9 +82,9 @@ python app.py --servdown 0
 ```
 ## Result Data Format
 After the completion of every task, _WebFitt_ saves 3 task result files on the client system (and the same files are also stored on the server if _WebFitt_ is configured that way). The file description are differentiated using individual file types:
-* _wf1_ - files of this type contains detailed information of every click made during the task.
-* _wf2_ - files of this type contains the aggregated information of each task.
-* _wf3_ - files of this type contains the aggregated information obtained from all the tasks.
+* _click_ - files of this type contains detailed information of every click made during the task.
+* _task_ - files of this type contains the aggregated information of each task.
+* _overall_ - files of this type contains the aggregated information obtained from all the tasks.
 
 All the data are stored in CSV format, and can be accessed using any text editor of choice. The data headers are included with each file. The header definition and calculations are derived from Scott MacKenzie's [GoFitts](http://www.yorku.ca/mack/FittsLawSoftware/) application, the documentation of which can be found [here](http://www.yorku.ca/mack/FittsLawSoftware/doc/index.html?GoFitts.html). 
 
