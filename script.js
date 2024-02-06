@@ -249,13 +249,6 @@ $(document).ready(function() {
         $(".servdown-policy").hide();
     }
 
-    // If the display has never been calibrated before, begin the calibration process
-    if (isDisplayCalibrated()) {
-        calibrationScale = getCalibrationValue();
-    } else {
-        beginCalibration();
-    }
-
 });
 
 function setCalibrationCookie(calibrationScale) {
@@ -343,6 +336,13 @@ function setup() {
     slider.style('display', 'none');
     slider.position(width / 2 - 100, height / 2 + 320);
     $("#confirm_calibration_btn").css({'width': 150, 'top': height / 2 + 350, 'left': width / 2 - 75});
+
+    // If the display has never been calibrated before, begin the calibration process
+    if (isDisplayCalibrated()) {
+        calibrationScale = getCalibrationValue();
+    } else {
+        beginCalibration();
+    }
 }
   
 function draw() {
