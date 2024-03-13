@@ -13,6 +13,8 @@ class Pos {
     }
 }
 
+var screenDiagonal = Math.sqrt(Math.pow(window.screen.width, 2) + Math.pow(window.screen.height, 2));
+
 var tasks = [];
 var uncalibratedTasks = [];
 var taskIdx = 0;
@@ -49,7 +51,13 @@ let clickDataHeader = ["Participant Code", "Session Code", "Condition Code", "Ha
 let aggregateTaskResultHeader = ["Participant Code", "Session Code", "Condition Code", "Hand Dominance", "Pointing Device", "Device Experience", "Amplitude", "Width", "Number of Targets", "Task Index", "Mean Completion Time (ms)", "Error (%)", "SDx", "We", "IDe", "Ae", "Throughput (bps)"];
 let overallMeanResultHeader = ["Participant Code", "Session Code", "Condition Code", "Hand Dominance", "Pointing Device", "Device Experience", "Mean Completion Time (ms)", "Mean Click Error (%)", "Mean Throughput (bps)"];
 
-$(document).ready(function() {
+let oscillator = null;
+// let peripheralPort = null;
+
+let trailPoints = [];
+const TRAIL_MAX_LENGTH = 200;
+
+$(document).ready(function () {
     $("#main_menu").hide();
 
     // Retrieving server download requirement from metadata
@@ -63,49 +71,49 @@ $(document).ready(function() {
     }
 
     // Change GitHub logo on hover
-    $("#github_logo").hover(function() {
+    $("#github_logo").hover(function () {
         $("#github_logo").attr("src", "assets/github_hover.png");
-    }, function() {
+    }, function () {
         $("#github_logo").attr("src", "assets/github_default.png");
     });
 
     // Change header logo on hover
-    $("#header_logo").hover(function() {
+    $("#header_logo").hover(function () {
         $("#header_logo").attr("src", "assets/header_logo_hover.png");
-    }, function() {
+    }, function () {
         $("#header_logo").attr("src", "assets/header_logo.png");
     });
 
     // Change calibrate icon on hover
-    $("#calibration_icon").hover(function() {
+    $("#calibration_icon").hover(function () {
         $("#calibration_icon").attr("src", "assets/calibrate_hover.png");
-    }, function() {
+    }, function () {
         $("#calibration_icon").attr("src", "assets/calibrate.png");
     });
 
     // Change volume icon on hover
-    $("#volume_icon").hover(function() {
+    $("#volume_icon").hover(function () {
         renderVolumeImage(true);
-    }, function() {
+    }, function () {
         renderVolumeImage(false);
     });
 
     // Change trail icon on hover
-    $("#trail_icon").hover(function() {
+    $("#trail_icon").hover(function () {
         renderTrailImage(true);
-    }, function() {
+    }, function () {
         renderTrailImage(false);
     });
 
     // Register mouse click on canvas
-    $(document).on("click", "canvas", function() {
+    $(document).on("click", "canvas", function () {
         if (isTaskRunning) {
             onCanvasClick();
         }
     });
 
     // Register mouse click on UI elements
-    $(document).on("click", ".ui_item", function() {
+    $(document).on("click", ".ui_item", function () {
         var id = $(this).attr("id");
         if (id == "volume_icon") {
             isMute = !isMute;
@@ -120,7 +128,7 @@ $(document).ready(function() {
         }
     });
 
-    $(document).on("click", "#confirm_calibration_btn", function() {
+    $(document).on("click", "#confirm_calibration_btn", function () {
         setCalibrationValue();
         if (getCookie("webfitt-calibration") == "") {
             $('#calibration-modal').modal('show');
@@ -131,24 +139,24 @@ $(document).ready(function() {
     });
 
     // Refresh page when header-logo is clicked
-    $("#header_logo").click(function() {
+    $("#header_logo").click(function () {
         window.location.reload();
     });
 
     // Open GitHub project page when GitHub logo is clicked
-    $("#github_logo").click(function() {
+    $("#github_logo").click(function () {
         window.open("https://github.com/adildsw/WebFitt");
     });
 
     $('#calibration-modal')
         .modal({
             closable: false,
-            onApprove: function() {
+            onApprove: function () {
                 setCalibrationCookie(calibrationScale);
                 endCalibration();
                 return true;
             },
-            onDeny: function() {
+            onDeny: function () {
                 endCalibration();
                 return true;
             }
@@ -157,7 +165,7 @@ $(document).ready(function() {
     $('#calibrated-modal')
         .modal({
             closable: false,
-            onApprove: function() {
+            onApprove: function () {
                 setCalibrationCookie(calibrationScale);
                 endCalibration();
                 return true;
@@ -165,7 +173,7 @@ $(document).ready(function() {
         });
 
     // Validate input and starting the task
-    $(document).on("click", "#start-test-btn", function() {
+    $(document).on("click", "#start-test-btn", function () {
         participantCode = $("#participant-code").val();
         sessionCode = $("#session-code").val();
         conditionCode = $("#condition-code").val();
@@ -181,7 +189,7 @@ $(document).ready(function() {
         }
         var A = A_raw.replace(" ", '').split(",");
         var W = W_raw.replace(" ", '').split(",");
-        
+
         var correctFlag = true;
         var errorMsg = "";
 
@@ -266,14 +274,13 @@ function beginCalibration() {
 }
 
 function endCalibration() {
-    isCalibrating = false;
     $("#main_menu").show();
     $(".ui_item").show();
     $("#header_logo").hide();
     $("#confirm_calibration_btn").hide();
     slider.value(calibrationScale);
-    // hide slider
     slider.style('display', 'none');
+    isCalibrating = false;
 }
 
 /*
@@ -328,14 +335,20 @@ function preload() {
 
 function setup() {
     createCanvas(windowWidth, windowHeight);
-    frameRate(60);
+    // frameRate(60);
     background(255);
+
+    oscillator = new p5.Oscillator();
+    oscillator.setType('sine');
+    oscillator.freq(440);
+    oscillator.amp(0.0);
+    oscillator.start();
 
     slider = createSlider(0.5, 2, 1, 0.01);
     slider.style('width', '200px');
     slider.style('display', 'none');
     slider.position(width / 2 - 100, height / 2 + 320);
-    $("#confirm_calibration_btn").css({'width': 150, 'top': height / 2 + 350, 'left': width / 2 - 75});
+    $("#confirm_calibration_btn").css({ 'width': 150, 'top': height / 2 + 350, 'left': width / 2 - 75 });
 
     // If the display has never been calibrated before, begin the calibration process
     if (isDisplayCalibrated()) {
@@ -344,7 +357,7 @@ function setup() {
         beginCalibration();
     }
 }
-  
+
 function draw() {
     background(255);
 
@@ -355,6 +368,7 @@ function draw() {
         renderTrail();
         runPipeline();
         renderInfoText();
+        sonifyTarget();
     }
     else if (isTaskFinished) {
         if (resultsview) {
@@ -367,6 +381,8 @@ function draw() {
     else {
         $("#main_menu").show();
     }
+
+    // console.log(frameRate());
 }
 
 function renderCalibrationPanel() {
@@ -381,7 +397,7 @@ function renderCalibrationPanel() {
     textFont(robotoLightFont);
     textSize(32);
     text("Please adjust the slider below so that the card on your screen matches a physical credit card.", width / 2, 210);
-    
+
     let val = slider.value();
     slider.style('display', 'block');
 
@@ -392,7 +408,7 @@ function renderCalibrationPanel() {
 
 function runPipeline() {
     var A = tasks[taskIdx].A;
-    var W = tasks[taskIdx].W ;
+    var W = tasks[taskIdx].W;
     var n = tasks[taskIdx].n;
     var mainTarget = getTargetIdxFromClickNumber(clickNumber, n);
     renderTargets(A, W, n, mainTarget);
@@ -407,13 +423,23 @@ function runPipeline() {
             computeAggregateTaskResult();
             computeOverallMeanResult();
             var filename = "WebFitts_" + participantCode + "_" + sessionCode + "_" + conditionCode + "_" + pointingDevice;
-			saveAsZipFile(filename);
+            saveAsZipFile(filename);
             if (servdown) {
                 uploadResult();
             }
         }
         clickNumber = 0;
         beginFlag = false;
+    }
+
+    // Recording trail points
+    if (beginFlag && isTrailing) {
+        trailPoints.push(new Pos(mouseX, mouseY));
+        if (trailPoints.length > TRAIL_MAX_LENGTH) {
+            trailPoints.shift();
+        }
+    } else {
+        trailPoints = [];
     }
 }
 
@@ -527,20 +553,19 @@ function keyPressed() {
         isMute = !isMute;
         renderVolumeImage(false);
     }
+    // else if (key == 'a') {
+    //     connectToPeripheral();
+    // }
 }
 
 // Renders trail on mouse cursor
 function renderTrail() {
-    if (!isTrailing || !beginFlag) {
-        background(255);
-    }
     if (isTrailing && beginFlag) {
-        noStroke();
-        fill("#AAAAAA");
-        circle(mouseX, mouseY, 2);
-        stroke("#AAAAAA");
-        strokeWeight(2);
-        line(mouseX, mouseY, pmouseX, pmouseY);
+        for (var i = 0; i < trailPoints.length - 1; i++) {
+            stroke(0, 0, 0, 100);
+            strokeWeight(3);
+            line(trailPoints[i].x, trailPoints[i].y, trailPoints[i + 1].x, trailPoints[i + 1].y);
+        }
     }
 }
 
@@ -696,7 +721,7 @@ function computeOverallMeanResult() {
     var overallMeanTime = computeMean(meanTimes);
     var overallMeanError = computeMean(errors);
     var overallMeanThroughput = computeMean(throughputs);
-    
+
     var ovRes = [];
     ovRes.push(participantCode);
     ovRes.push(sessionCode);
@@ -712,27 +737,27 @@ function computeOverallMeanResult() {
 }
 
 // Generates individual click result string
-function generateClickResultString(){
+function generateClickResultString() {
     var resultString = clickDataHeader.join(",") + "\n";
-    for(var i = 0; i < clickData.length; i++){
+    for (var i = 0; i < clickData.length; i++) {
         resultString += clickData[i].join(",") + "\n";
     }
     return resultString;
 }
 
 // Generates aggregate task result string
-function generateTaskResultString(){
+function generateTaskResultString() {
     var resultString = aggregateTaskResultHeader.join(",") + "\n";
-    for(var i = 0; i < aggregateTaskResult.length; i++){
+    for (var i = 0; i < aggregateTaskResult.length; i++) {
         resultString += aggregateTaskResult[i].join(",") + "\n";
     }
     return resultString;
 }
 
 // Generates overall mean result string
-function generateMeanResultString(){
+function generateMeanResultString() {
     var resultString = overallMeanResultHeader.join(",") + "\n";
-    for(var i = 0; i < overallMeanResult.length; i++){
+    for (var i = 0; i < overallMeanResult.length; i++) {
         resultString += overallMeanResult[i].join(",") + "\n";
     }
     return resultString;
@@ -767,7 +792,7 @@ function uploadResult() {
     var filename = "WebFitts_" + participantCode + "_" + sessionCode + "_" + conditionCode + "_" + pointingDevice;
     var data = "filename=" + filename + "&click_result=" + clickResult + "&mean_result=" + meanResult + "&task_result=" + taskResult;
     var url = "/saveResult";
-    postRequest(url, data, function() {
+    postRequest(url, data, function () {
         console.log("Result uploaded to server!");
     });
 }
@@ -851,10 +876,10 @@ function getTargetIdxFromClickNumber(c, n) {
  * (Pos) Position of the target
  * 
  */
-function getTargetPosition(A, n, idx){
+function getTargetPosition(A, n, idx) {
     var thetaX = 360 / n;
-    var x = (width / 2) + cos(radians(idx * thetaX)) * A/2;
-    var y = (height / 2) + sin(radians(idx * thetaX)) * A/2;
+    var x = (width / 2) + cos(radians(idx * thetaX)) * A / 2;
+    var y = (height / 2) + sin(radians(idx * thetaX)) * A / 2;
     return new Pos(x, y);
 }
 
@@ -862,7 +887,8 @@ function getTargetPosition(A, n, idx){
 function windowResized() {
     resizeCanvas(windowWidth, windowHeight);
     slider.position(width / 2 - 100, height / 2 + 320);
-    $("#confirm_calibration_btn").css({'width': 150, 'top': height / 2 + 350, 'left': width / 2 - 75});
+    screenDiagonal = Math.sqrt(Math.pow(window.screen.width, 2) + Math.pow(window.screen.height, 2));
+    $("#confirm_calibration_btn").css({ 'width': 150, 'top': height / 2 + 350, 'left': width / 2 - 75 });
 }
 
 // Render volume image based on hover state and click
@@ -874,7 +900,7 @@ function renderVolumeImage(isHovering) {
         else {
             $("#volume_icon").attr("src", "assets/volume_on_hover.png");
         }
-    } 
+    }
     else {
         if (isMute) {
             $("#volume_icon").attr("src", "assets/volume_mute_default.png");
@@ -894,7 +920,7 @@ function renderTrailImage(isHovering) {
         else {
             $("#trail_icon").attr("src", "assets/trail_off_hover.png");
         }
-    } 
+    }
     else {
         if (isTrailing) {
             $("#trail_icon").attr("src", "assets/trail_on_default.png");
@@ -904,6 +930,88 @@ function renderTrailImage(isHovering) {
         }
     }
 }
+
+/*
+|----------------------------------------------------
+| ACCESSIBILITY FUNCTIONS
+|----------------------------------------------------
+*/
+
+// Sonify target distance
+function sonifyTarget() {
+    
+    var target = getTargetPosition(tasks[taskIdx].A, tasks[taskIdx].n, getTargetIdxFromClickNumber(clickNumber, tasks[taskIdx].n));
+    var distanceToTarget = sqrt(pow(target.x - mouseX, 2) + pow(target.y - mouseY, 2)) - tasks[taskIdx].W / 2;
+    distanceToTarget = constrain(distanceToTarget, 0, screenDiagonal);
+    var normalizedDistance = map(distanceToTarget, 0, screenDiagonal, 0, 1);
+    var frequency = logMap(normalizedDistance, 0, 1, 500, 100);
+    if (distanceToTarget == 0) frequency = 550;
+
+    if (isMute || !isTaskRunning) {
+        oscillator.amp(0);
+    } else {
+        oscillator.freq(frequency);
+        oscillator.amp(0.5);
+    }
+
+    // if (peripheralPort) {
+    //     if (isTaskRunning) writeToPeripheral(normalizedDistance);
+    //     else if (isTaskFinished) disconnectPeripheral();
+    // }
+
+    // writeToPeripheral(normalizedDistance);
+}
+
+// let peripheralWriter = null;
+// async function connectToPeripheral() {
+//     try {
+//         peripheralPort = await navigator.serial.requestPort();
+//         await peripheralPort.open({ baudRate: 9600 });
+//         peripheralWriter = peripheralPort.writable.getWriter();
+//         console.log('Connected to Arduino');
+
+//         const reader = peripheralPort.readable.getReader();
+//         while (true) {
+//             const { value, done } = await reader.read();
+//             if (done) {
+//                 reader.releaseLock();
+//                 break;
+//             }
+//             console.log(value);
+//         }
+//     } catch (error) {
+//         console.error('Error:', error);
+//     }
+// }
+
+// async function writeToPeripheral(normalizedTargetDistance) {
+//     try {
+//         if (!peripheralPort || !peripheralWriter) {
+//             console.error('Error: No peripheral port found');
+//             return;
+//         }
+        
+//         const data = new Float32Array([0.5]);
+//         // console.log(data);
+//         // console.log(data.buffer);
+//         await peripheralWriter.write(data);
+//         // peripheralWriter.releaseLock();
+//     } catch (error) {
+//         console.error('Error:', error);
+//     }
+// }
+
+// async function disconnectPeripheral() {
+//     try {
+//         if (peripheralPort) {
+//             await peripheralPort.close();
+//             peripheralPort = null;
+//             console.log('Disconnected from Arduino');
+//         }
+//     } catch (error) {
+//         console.error('Error:', error);
+//     }
+// }
 
 /*
 |----------------------------------------------------
@@ -962,7 +1070,7 @@ function randInt(min, max) {
 // Performs a post request to the given url and calls the callback function upon success
 function postRequest(url, data, callback) {
     var request = new XMLHttpRequest();
-    request.onreadystatechange = function() { 
+    request.onreadystatechange = function () {
         if (request.readyState == 4 && request.status == 200)
             callback(request.responseText);
     }
@@ -973,16 +1081,16 @@ function postRequest(url, data, callback) {
 
 // Function to save results as a zip file
 function saveAsZipFile(filename) {
-	var zip = new JSZip();
-	zip.file(filename + "_click.csv", generateClickResultString());
-	zip.file(filename + "_task.csv", generateTaskResultString());
-	zip.file(filename + "_overall.csv", generateMeanResultString());
-	// zip.generateAsync({type:"base64"}).then(function (content) {
-		 // location.href="data:application/zip;base64," + content;
-	// });
-	zip.generateAsync({type:"blob"}).then(function (content) {
-		 saveAs(content, filename + ".zip"); // FileSaver.js Library Function
-	});
+    var zip = new JSZip();
+    zip.file(filename + "_click.csv", generateClickResultString());
+    zip.file(filename + "_task.csv", generateTaskResultString());
+    zip.file(filename + "_overall.csv", generateMeanResultString());
+    // zip.generateAsync({type:"base64"}).then(function (content) {
+    // location.href="data:application/zip;base64," + content;
+    // });
+    zip.generateAsync({ type: "blob" }).then(function (content) {
+        saveAs(content, filename + ".zip"); // FileSaver.js Library Function
+    });
 }
 
 // Checks if all elements in the array are numbers
@@ -1009,7 +1117,7 @@ function getCookie(cname) {
     var name = cname + "=";
     var decodedCookie = decodeURIComponent(document.cookie);
     var ca = decodedCookie.split(';');
-    for(var i = 0; i <ca.length; i++) {
+    for (var i = 0; i < ca.length; i++) {
         var c = ca[i];
         while (c.charAt(0) == ' ') {
             c = c.substring(1);
@@ -1024,9 +1132,22 @@ function getCookie(cname) {
 // Utility function to set cookie value
 function setCookie(cname, cvalue, exdays) {
     var d = new Date();
-    d.setTime(d.getTime() + (exdays*24*60*60*1000));
-    var expires = "expires="+ d.toUTCString();
+    d.setTime(d.getTime() + (exdays * 24 * 60 * 60 * 1000));
+    var expires = "expires=" + d.toUTCString();
     document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+}
+
+// Function for logarithmic mapping
+// function logMap(value, start1, stop1, start2, stop2) {
+//     const scale = (stop2 - start2) / (Math.log(stop1) - Math.log(start1));
+//     return start2 + scale * (Math.log(value) - Math.log(start1));
+// }
+
+function logMap(x, in_min, in_max, out_min, out_max) {
+    x = constrain(x, in_min, in_max);
+    normalizedX = (x - in_min) / (in_max - in_min);
+    val = log(normalizedX * (exp(1.0) - 1.0) + 1.0) / log(exp(1.0));
+    return val * (out_max - out_min) + out_min;
 }
 
 /*
@@ -1055,7 +1176,7 @@ function testing() {
         a.push(Math.sqrt((sX[i] - tX[i]) * (sX[i] - tX[i]) + (sY[i] - tY[i]) * (sY[i] - tY[i])));
         b.push(Math.sqrt((tX[i] - cX[i]) * (tX[i] - cX[i]) + (tY[i] - cY[i]) * (tY[i] - cY[i])));
         c.push(Math.sqrt((sX[i] - cX[i]) * (sX[i] - cX[i]) + (sY[i] - cY[i]) * (sY[i] - cY[i])));
-        d.push(((c[i] * c[i]) - (b[i] * b[i]) - (a[i] * a[i]))/(2.0 * a[i]));
+        d.push(((c[i] * c[i]) - (b[i] * b[i]) - (a[i] * a[i])) / (2.0 * a[i]));
         aes.push(a[i] + d[i]);
     }
 
