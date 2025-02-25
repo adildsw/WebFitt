@@ -85,4 +85,4 @@ After the completion of every task, _WebFitts_ saves 3 task result files on the 
 All the data are stored in CSV format, and can be accessed using any text editor of choice. The data headers are included with each file. The header definition and calculations are derived from Scott MacKenzie's [GoFitts](http://www.yorku.ca/mack/FittsLawSoftware/) application, the documentation of which can be found [here](http://www.yorku.ca/mack/FittsLawSoftware/doc/index.html?GoFitts.html). 
 
 ## Contribution
-All contributions are welcome! You can open an issue to discuss the changes, and use pull requests to send in the updates.
+All contributions are welcome! You can open an issue to discuss the changes, and use pull requests to suggest modifications.
