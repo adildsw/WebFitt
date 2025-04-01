@@ -1,7 +1,7 @@
 import os
 import argparse
 import webbrowser
-import pandas
+import pandas as pd
 from time import time
 
 from flask import Flask, render_template, request, Response
@@ -39,16 +39,16 @@ def save_result():
 @app.route("/utils/mergewf3")
 def gen_merged_mean():
     check_data_path()
-    if len(os.listdir("data")) <= 1:
+    data_files = [os.path.join("data", f) for f in os.listdir("data") if f.endswith(".wf3")]
+    if len(data_files) <= 1:
         return "No data to merge"
-    df = pandas.DataFrame()
-    for filename in os.listdir("data"):
-        if filename.endswith(".wf3"):
-            filedir = os.path.join("data", filename)
-            temp = pandas.read_csv(filedir)
-            temp.insert(0, "Filename", filename)
-            df = df.append(temp)
-    merged_mean = df.to_csv(index=False)
+    df_list = []
+    for filedir in data_files:
+        temp = pd.read_csv(filedir)
+        temp.insert(0, "Filename", os.path.basename(filedir))
+        df_list.append(temp)
+    merged_df = pd.concat(df_list, ignore_index=True)
+    merged_mean = merged_df.to_csv(index=False)
     return Response(merged_mean, mimetype="text/csv", headers={"Content-disposition": "attachment; filename=merged_wf3.csv"})
 
 @app.route("/utils/cleardata")
