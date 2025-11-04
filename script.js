@@ -163,7 +163,18 @@ $(document).ready(function() {
                 return true;
             }
         });
-
+    
+    // Load saved input values from cookies
+    if (getCookie("webfitt-participant-code") != "") $("#participant-code").val(getCookie("webfitt-participant-code"));
+    if (getCookie("webfitt-session-code") != "") $("#session-code").val(getCookie("webfitt-session-code"));
+    if (getCookie("webfitt-condition-code") != "") $("#condition-code").val(getCookie("webfitt-condition-code"));
+    if (getCookie("webfitt-hand-dominance") != "") $("input[name='hand-dominance'][value='" + getCookie("webfitt-hand-dominance") + "']").prop("checked", true);
+    if (getCookie("webfitt-pointing-device") != "") $("input[name='pointing-device'][value='" + getCookie("webfitt-pointing-device") + "']").prop("checked", true);
+    if (getCookie("webfitt-device-experience") != "") $("input[name='device-experience'][value='" + getCookie("webfitt-device-experience") + "']").prop("checked", true);
+    if (getCookie("webfitt-amplitude") != "") $("#amplitude").val(getCookie("webfitt-amplitude"));
+    if (getCookie("webfitt-width") != "") $("#width").val(getCookie("webfitt-width"));
+    if (getCookie("webfitt-number-of-targets") != "") $("#number-of-targets").val(getCookie("webfitt-number-of-targets"));
+    
     // Validate input and starting the task
     $(document).on("click", "#start-test-btn", function() {
         participantCode = $("#participant-code").val();
@@ -175,6 +186,18 @@ $(document).ready(function() {
         var A_raw = $("#amplitude").val();
         var W_raw = $("#width").val();
         var n = parseInt($("#number-of-targets").val());
+
+        // Save Input Values to Cookie
+        setCookie("webfitt-participant-code", participantCode, 3650);
+        setCookie("webfitt-session-code", sessionCode, 3650);
+        setCookie("webfitt-condition-code", conditionCode, 3650);
+        setCookie("webfitt-hand-dominance", handDominance, 3650);
+        setCookie("webfitt-pointing-device", pointingDevice, 3650);
+        setCookie("webfitt-device-experience", deviceExperience, 3650);
+        setCookie("webfitt-amplitude", A_raw, 3650);
+        setCookie("webfitt-width", W_raw, 3650);
+        setCookie("webfitt-number-of-targets", n, 3650);
+
         var policy = false;
         if ($("#policy").is(":checked")) {
             policy = true;
