@@ -22,6 +22,7 @@ var clickNumber = 0;
 var isMute = true;
 var isTrailing = false;
 var isTaskRunning = false;
+var trailBuffer = null;
 var isTaskFinished = false;
 var beginFlag = false;
 
@@ -40,12 +41,16 @@ var lastClickTime = 0;
 var currentClickTime = 0;
 
 var clickData = [];
+var traceData = [];
 var aggregateTaskResult = [];
 var overallMeanResult = [];
 var servdown = false;
 var resultsview = true;
 
+var traceStartTime = 0;
+
 let clickDataHeader = ["Participant Code", "Session Code", "Condition Code", "Hand Dominance", "Pointing Device", "Device Experience", "Amplitude", "Width", "Number of Targets", "Task Index", "Click Number", "Completion Time (ms)", "Source X", "Source Y", "Target X", "Target Y", "Click X", "Click Y", "Source-Target Distance", "dx", "Incorrect"];
+let traceDataHeader = ["Participant Code", "Session Code", "Condition Code", "Hand Dominance", "Pointing Device", "Device Experience", "Amplitude", "Width", "Number of Targets", "Task Index", "Click Number", "Timestamp (ms)", "Cursor X", "Cursor Y", "Target X", "Target Y", "Event Type"];
 let aggregateTaskResultHeader = ["Participant Code", "Session Code", "Condition Code", "Hand Dominance", "Pointing Device", "Device Experience", "Amplitude", "Width", "Number of Targets", "Task Index", "Mean Completion Time (ms)", "Error (%)", "SDx", "We", "IDe", "Ae", "Throughput (bps)"];
 let overallMeanResultHeader = ["Participant Code", "Session Code", "Condition Code", "Hand Dominance", "Pointing Device", "Device Experience", "Mean Completion Time (ms)", "Mean Click Error (%)", "Mean Throughput (bps)"];
 
@@ -312,8 +317,10 @@ function beginApp(a_list, w_list, n) {
     taskIdx = 0;
     clickNumber = 0;
     clickData = [];
+    traceData = [];
     aggregateTaskResult = [];
     overallMeanResult = [];
+    clearTrailBuffer();
     tasks = generateTaskSequence(a_list, w_list, n);
     uncalibratedTasks = generateUncalibratedTaskSequence(a_list, w_list, n);
 
@@ -354,6 +361,10 @@ function setup() {
     frameRate(60);
     background(255);
 
+    // Create graphics buffer for trail persistence
+    trailBuffer = createGraphics(windowWidth, windowHeight);
+    trailBuffer.clear();
+
     slider = createSlider(0.5, 2, 1, 0.01);
     slider.style('width', '200px');
     slider.style('display', 'none');
@@ -376,6 +387,7 @@ function draw() {
     }
     else if (isTaskRunning) {
         renderTrail();
+        recordTracePoint();
         runPipeline();
         renderInfoText();
     }
@@ -437,6 +449,7 @@ function runPipeline() {
         }
         clickNumber = 0;
         beginFlag = false;
+        clearTrailBuffer();
     }
 }
 
@@ -459,10 +472,12 @@ function onCanvasClick() {
         beginFlag = true;
         lastClickTime = millis();
         currentClickTime = lastClickTime;
+        traceStartTime = lastClickTime;
         clickNumber++;
     }
     else if (beginFlag) {
         currentClickTime = millis();
+        recordTraceClick(clickPos, correct);
         computeClickData(clickPos);
         clickNumber++;
         lastClickTime = currentClickTime;
@@ -552,19 +567,99 @@ function keyPressed() {
     }
 }
 
-// Renders trail on mouse cursor
+// Renders trail on mouse cursor using persistent buffer
 function renderTrail() {
-    if (!isTrailing || !beginFlag) {
-        background(255);
-    }
+    // Draw trail segment to buffer if trailing is enabled and test has started
     if (isTrailing && beginFlag) {
-        noStroke();
-        fill("#AAAAAA");
-        circle(mouseX, mouseY, 2);
-        stroke("#AAAAAA");
-        strokeWeight(2);
-        line(mouseX, mouseY, pmouseX, pmouseY);
+        trailBuffer.noStroke();
+        trailBuffer.fill("#AAAAAA");
+        trailBuffer.circle(mouseX, mouseY, 2);
+        trailBuffer.stroke("#AAAAAA");
+        trailBuffer.strokeWeight(2);
+        trailBuffer.line(mouseX, mouseY, pmouseX, pmouseY);
     }
+
+    // Display the trail buffer on main canvas if trailing is enabled
+    if (isTrailing && beginFlag) {
+        image(trailBuffer, 0, 0);
+    }
+}
+
+// Clears the trail buffer (called when starting a new task)
+function clearTrailBuffer() {
+    if (trailBuffer) {
+        trailBuffer.clear();
+    }
+}
+
+// Records trace point data for the current frame
+function recordTracePoint() {
+    if (!beginFlag) {
+        return;
+    }
+
+    var A = uncalibratedTasks[taskIdx].A;
+    var W = uncalibratedTasks[taskIdx].W;
+    var n = uncalibratedTasks[taskIdx].n;
+    var mainTarget = getTargetIdxFromClickNumber(clickNumber, n);
+    var targetPos = getTargetPosition(tasks[taskIdx].A, n, mainTarget);
+    var timestamp = millis() - traceStartTime;
+
+    var data = [];
+    data.push(participantCode);
+    data.push(sessionCode);
+    data.push(conditionCode);
+    data.push(handDominance);
+    data.push(pointingDevice);
+    data.push(deviceExperience);
+    data.push(A);
+    data.push(W);
+    data.push(n);
+    data.push(taskIdx);
+    data.push(clickNumber);
+    data.push(timestamp);
+    data.push(mouseX);
+    data.push(mouseY);
+    data.push(targetPos.x);
+    data.push(targetPos.y);
+    data.push("move");
+
+    traceData.push(data);
+}
+
+// Records a click event in the trace data
+function recordTraceClick(clickPos, isCorrect) {
+    if (!beginFlag) {
+        return;
+    }
+
+    var A = uncalibratedTasks[taskIdx].A;
+    var W = uncalibratedTasks[taskIdx].W;
+    var n = uncalibratedTasks[taskIdx].n;
+    var mainTarget = getTargetIdxFromClickNumber(clickNumber, n);
+    var targetPos = getTargetPosition(tasks[taskIdx].A, n, mainTarget);
+    var timestamp = millis() - traceStartTime;
+
+    var data = [];
+    data.push(participantCode);
+    data.push(sessionCode);
+    data.push(conditionCode);
+    data.push(handDominance);
+    data.push(pointingDevice);
+    data.push(deviceExperience);
+    data.push(A);
+    data.push(W);
+    data.push(n);
+    data.push(taskIdx);
+    data.push(clickNumber);
+    data.push(timestamp);
+    data.push(clickPos.x);
+    data.push(clickPos.y);
+    data.push(targetPos.x);
+    data.push(targetPos.y);
+    data.push(isCorrect ? "click_correct" : "click_incorrect");
+
+    traceData.push(data);
 }
 
 // Renders task information text
@@ -761,6 +856,15 @@ function generateMeanResultString(){
     return resultString;
 }
 
+// Generates trace data result string
+function generateTraceResultString(){
+    var resultString = traceDataHeader.join(",") + "\n";
+    for(var i = 0; i < traceData.length; i++){
+        resultString += traceData[i].join(",") + "\n";
+    }
+    return resultString;
+}
+
 // Concatenates all the result arrays into a string and returns it
 function generateResultString() {
     var resultString = "";
@@ -786,9 +890,10 @@ function uploadResult() {
     var clickResult = generateClickResultString();
     var taskResult = generateTaskResultString();
     var meanResult = generateMeanResultString();
+    var traceResult = generateTraceResultString();
 
     var filename = "WebFitts_" + participantCode + "_" + sessionCode + "_" + conditionCode + "_" + pointingDevice;
-    var data = "filename=" + filename + "&click_result=" + clickResult + "&mean_result=" + meanResult + "&task_result=" + taskResult;
+    var data = "filename=" + filename + "&click_result=" + clickResult + "&mean_result=" + meanResult + "&task_result=" + taskResult + "&trace_result=" + traceResult;
     var url = "/saveResult";
     postRequest(url, data, function() {
         console.log("Result uploaded to server!");
@@ -884,6 +989,9 @@ function getTargetPosition(A, n, idx){
 // Resizes the canvas to fit the window on resize
 function windowResized() {
     resizeCanvas(windowWidth, windowHeight);
+    // Recreate trail buffer with new dimensions
+    trailBuffer = createGraphics(windowWidth, windowHeight);
+    trailBuffer.clear();
     slider.position(width / 2 - 100, height / 2 + 320);
     $("#confirm_calibration_btn").css({'width': 150, 'top': height / 2 + 350, 'left': width / 2 - 75});
 }
@@ -1000,6 +1108,7 @@ function saveAsZipFile(filename) {
 	zip.file(filename + "_click.csv", generateClickResultString());
 	zip.file(filename + "_task.csv", generateTaskResultString());
 	zip.file(filename + "_overall.csv", generateMeanResultString());
+	zip.file(filename + "_trace.csv", generateTraceResultString());
 	// zip.generateAsync({type:"base64"}).then(function (content) {
 		 // location.href="data:application/zip;base64," + content;
 	// });

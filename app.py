@@ -20,6 +20,7 @@ def save_result():
     click_result = request.form["click_result"]
     task_result = request.form["task_result"]
     mean_result = request.form["mean_result"]
+    trace_result = request.form.get("trace_result", "")
     filename = request.form["filename"]
     ip = request.remote_addr
 
@@ -33,7 +34,10 @@ def save_result():
         f.write(task_result)
     with open(os.path.join("data", "{}_{}_{}.wf3".format(filename, ip, timestamp)), "w") as f:
         f.write(mean_result)
-    
+    if trace_result:
+        with open(os.path.join("data", "{}_{}_{}.wf4".format(filename, ip, timestamp)), "w") as f:
+            f.write(trace_result)
+
     return "OK"
 
 @app.route("/utils/mergewf3")
@@ -55,7 +59,7 @@ def gen_merged_mean():
 def clear_collected_data():
     check_data_path()
     for filename in os.listdir("data"):
-        if filename.endswith(".wf1") or filename.endswith(".wf2") or filename.endswith(".wf3"):
+        if filename.endswith(".wf1") or filename.endswith(".wf2") or filename.endswith(".wf3") or filename.endswith(".wf4"):
             filedir = os.path.join("data", filename)
             os.rename(filedir, os.path.join("data/trash", filename))
     return "Cleared"
