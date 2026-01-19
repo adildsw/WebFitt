@@ -132,11 +132,99 @@ const Connector = (function() {
     /**
      * Handle commands from the external system
      * @param {Object} message - The command message
+     *
+     * Supported commands:
+     * - set_cursor_absolute: {x, y} or {nx, ny} (normalized 0-1)
+     * - set_cursor_relative: {dx, dy} or {ndx, ndy} (normalized)
+     * - trigger_click: triggers a click at current proxy cursor position
+     * - enable_control: enables external cursor control
+     * - disable_control: disables external control (returns to mouse)
      */
     function handleCommand(message) {
-        // Placeholder for handling external commands
-        // Can be extended to control the study remotely
-        console.log('[Connector] Command received:', message.command);
+        const cmd = message.command;
+        const data = message.data || {};
+
+        switch (cmd) {
+            case 'set_cursor_absolute':
+                // Absolute position in pixels or normalized (0-1)
+                if (data.nx !== undefined && data.ny !== undefined) {
+                    // Normalized coordinates
+                    const x = data.nx * window.innerWidth;
+                    const y = data.ny * window.innerHeight;
+                    setProxyCursorPosition(x, y);
+                } else if (data.x !== undefined && data.y !== undefined) {
+                    // Pixel coordinates
+                    setProxyCursorPosition(data.x, data.y);
+                }
+                break;
+
+            case 'set_cursor_relative':
+                // Relative movement in pixels or normalized
+                if (data.ndx !== undefined && data.ndy !== undefined) {
+                    // Normalized delta
+                    const dx = data.ndx * window.innerWidth;
+                    const dy = data.ndy * window.innerHeight;
+                    moveProxyCursorRelative(dx, dy);
+                } else if (data.dx !== undefined && data.dy !== undefined) {
+                    // Pixel delta
+                    moveProxyCursorRelative(data.dx, data.dy);
+                }
+                break;
+
+            case 'trigger_click':
+                // Trigger a click at current proxy cursor position
+                triggerProxyClick();
+                break;
+
+            case 'enable_control':
+                // Enable external cursor control
+                enableExternalControl();
+                break;
+
+            case 'disable_control':
+                // Disable external control (return to mouse)
+                disableExternalControl();
+                break;
+
+            default:
+                console.log('[Connector] Unknown command:', cmd);
+        }
+    }
+
+    /**
+     * Move proxy cursor by relative amount
+     */
+    function moveProxyCursorRelative(dx, dy) {
+        if (typeof moveProxyCursor === 'function') {
+            moveProxyCursor(dx, dy);
+        }
+    }
+
+    /**
+     * Trigger a click at proxy cursor position
+     */
+    function triggerProxyClick() {
+        if (typeof onCanvasClick === 'function' && typeof isTaskRunning !== 'undefined' && isTaskRunning) {
+            onCanvasClick();
+        }
+    }
+
+    /**
+     * Enable external cursor control mode
+     */
+    function enableExternalControl() {
+        if (typeof enableExternalCursorControl === 'function') {
+            enableExternalCursorControl();
+        }
+    }
+
+    /**
+     * Disable external cursor control mode (return to mouse)
+     */
+    function disableExternalControl() {
+        if (typeof disableExternalCursorControl === 'function') {
+            disableExternalCursorControl();
+        }
     }
 
     /**

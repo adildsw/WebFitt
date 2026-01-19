@@ -49,6 +49,14 @@ var resultsview = true;
 
 var traceStartTime = 0;
 
+// Proxy cursor variables
+var proxyCursorX = 0;
+var proxyCursorY = 0;
+var prevProxyCursorX = 0;
+var prevProxyCursorY = 0;
+var useProxyCursor = true;      // Enable/disable proxy cursor system
+var externalCursorControl = false;  // When true, cursor is controlled externally (not by mouse)
+
 let clickDataHeader = ["Participant Code", "Session Code", "Condition Code", "Hand Dominance", "Pointing Device", "Device Experience", "Amplitude", "Width", "Number of Targets", "Task Index", "Click Number", "Completion Time (ms)", "Source X", "Source Y", "Target X", "Target Y", "Click X", "Click Y", "Source-Target Distance", "dx", "Incorrect"];
 let traceDataHeader = ["Participant Code", "Session Code", "Condition Code", "Hand Dominance", "Pointing Device", "Device Experience", "Amplitude", "Width", "Number of Targets", "Task Index", "Click Number", "Timestamp (ms)", "Cursor X", "Cursor Y", "Target X", "Target Y", "Event Type"];
 let aggregateTaskResultHeader = ["Participant Code", "Session Code", "Condition Code", "Hand Dominance", "Pointing Device", "Device Experience", "Amplitude", "Width", "Number of Targets", "Task Index", "Mean Completion Time (ms)", "Error (%)", "SDx", "We", "IDe", "Ae", "Throughput (bps)"];
@@ -435,15 +443,20 @@ function draw() {
 
     if (isCalibrating) {
         renderCalibrationPanel();
+        showSystemCursor();
     }
     else if (isTaskRunning) {
+        hideSystemCursor();
+        updateProxyCursor();
         renderTrail();
         recordTracePoint();
         broadcastToConnector();
         runPipeline();
         renderInfoText();
+        renderProxyCursor();
     }
     else if (isTaskFinished) {
+        showSystemCursor();
         if (resultsview) {
             renderTaskCompleteMessage();
         }
@@ -452,8 +465,127 @@ function draw() {
         }
     }
     else {
+        showSystemCursor();
         $("#main_menu").show();
     }
+}
+
+/**
+ * Updates the proxy cursor position.
+ * By default, it follows the mouse unless external control is enabled.
+ */
+function updateProxyCursor() {
+    // Store previous position for trail rendering
+    prevProxyCursorX = proxyCursorX;
+    prevProxyCursorY = proxyCursorY;
+
+    // Only follow mouse if not under external control
+    if (useProxyCursor && !externalCursorControl) {
+        proxyCursorX = mouseX;
+        proxyCursorY = mouseY;
+    }
+}
+
+/**
+ * Sets the proxy cursor position directly (absolute).
+ * Used by external interfaces to control the cursor.
+ * @param {number} x - X position in pixels
+ * @param {number} y - Y position in pixels
+ */
+function setProxyCursorPosition(x, y) {
+    // Enable external control mode
+    externalCursorControl = true;
+
+    // Clamp to canvas bounds
+    proxyCursorX = Math.max(0, Math.min(x, width));
+    proxyCursorY = Math.max(0, Math.min(y, height));
+}
+
+/**
+ * Moves the proxy cursor by a relative amount.
+ * @param {number} dx - Delta X in pixels
+ * @param {number} dy - Delta Y in pixels
+ */
+function moveProxyCursor(dx, dy) {
+    setProxyCursorPosition(proxyCursorX + dx, proxyCursorY + dy);
+}
+
+/**
+ * Enables external control of the proxy cursor.
+ */
+function enableExternalCursorControl() {
+    externalCursorControl = true;
+}
+
+/**
+ * Disables external control, returning cursor to mouse-following mode.
+ */
+function disableExternalCursorControl() {
+    externalCursorControl = false;
+}
+
+/**
+ * Gets the current cursor position (proxy or mouse).
+ */
+function getCursorPosition() {
+    if (useProxyCursor && isTaskRunning) {
+        return new Pos(proxyCursorX, proxyCursorY);
+    }
+    return new Pos(mouseX, mouseY);
+}
+
+/**
+ * Renders the proxy cursor on screen.
+ */
+function renderProxyCursor() {
+    if (!useProxyCursor) return;
+
+    push();
+    // Draw cursor shape (arrow pointer)
+    translate(proxyCursorX, proxyCursorY);
+
+    // Cursor shadow
+    fill(0, 0, 0, 50);
+    noStroke();
+    beginShape();
+    vertex(2, 2);
+    vertex(2, 22);
+    vertex(7, 17);
+    vertex(12, 25);
+    vertex(15, 23);
+    vertex(10, 15);
+    vertex(17, 15);
+    endShape(CLOSE);
+
+    // Cursor body (white with black outline)
+    fill(255);
+    stroke(0);
+    strokeWeight(1.5);
+    beginShape();
+    vertex(0, 0);
+    vertex(0, 20);
+    vertex(5, 15);
+    vertex(10, 23);
+    vertex(13, 21);
+    vertex(8, 13);
+    vertex(15, 13);
+    endShape(CLOSE);
+
+    pop();
+}
+
+/**
+ * Hides the system cursor.
+ */
+function hideSystemCursor() {
+    document.body.style.cursor = 'none';
+}
+
+/**
+ * Shows the system cursor.
+ */
+function showSystemCursor() {
+    document.body.style.cursor = 'default';
 }
 
 function renderCalibrationPanel() {
@@ -526,7 +658,7 @@ function onCanvasClick() {
     var W = tasks[taskIdx].W;
     var n = tasks[taskIdx].n;
     var mainTarget = getTargetIdxFromClickNumber(clickNumber, n);
-    var clickPos = new Pos(mouseX, mouseY);
+    var clickPos = getCursorPosition();  // Use proxy cursor position
 
     var correct = isClickCorrect(A, W, n, mainTarget, clickPos);
     if (correct && !isMute) {
@@ -656,12 +788,13 @@ function keyPressed() {
 function renderTrail() {
     // Draw trail segment to buffer if trailing is enabled and test has started
     if (isTrailing && beginFlag) {
+        var cursorPos = getCursorPosition();
         trailBuffer.noStroke();
         trailBuffer.fill("#AAAAAA");
-        trailBuffer.circle(mouseX, mouseY, 2);
+        trailBuffer.circle(cursorPos.x, cursorPos.y, 2);
         trailBuffer.stroke("#AAAAAA");
         trailBuffer.strokeWeight(2);
-        trailBuffer.line(mouseX, mouseY, pmouseX, pmouseY);
+        trailBuffer.line(cursorPos.x, cursorPos.y, prevProxyCursorX, prevProxyCursorY);
     }
 
     // Display the trail buffer on main canvas if trailing is enabled
@@ -689,6 +822,7 @@ function recordTracePoint() {
     var mainTarget = getTargetIdxFromClickNumber(clickNumber, n);
     var targetPos = getTargetPosition(tasks[taskIdx].A, n, mainTarget);
     var timestamp = millis() - traceStartTime;
+    var cursorPos = getCursorPosition();  // Use proxy cursor position
 
     var data = [];
     data.push(participantCode);
@@ -703,8 +837,8 @@ function recordTracePoint() {
     data.push(taskIdx);
     data.push(clickNumber);
     data.push(timestamp);
-    data.push(mouseX);
-    data.push(mouseY);
+    data.push(cursorPos.x);
+    data.push(cursorPos.y);
     data.push(targetPos.x);
     data.push(targetPos.y);
     data.push("move");
@@ -758,10 +892,11 @@ function broadcastToConnector() {
     var n = uncalibratedTasks[taskIdx].n;
     var mainTarget = getTargetIdxFromClickNumber(clickNumber, n);
     var targetPos = getTargetPosition(tasks[taskIdx].A, n, mainTarget);
+    var cursorPos = getCursorPosition();  // Use proxy cursor position
 
     Connector.broadcastStudyData({
-        cursorX: mouseX,
-        cursorY: mouseY,
+        cursorX: cursorPos.x,
+        cursorY: cursorPos.y,
         targetX: targetPos.x,
         targetY: targetPos.y,
         taskIndex: taskIdx,
