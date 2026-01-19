@@ -430,12 +430,14 @@ function setup() {
     slider.position(width / 2 - 100, height / 2 + 320);
     $("#confirm_calibration_btn").css({'width': 150, 'top': height / 2 + 350, 'left': width / 2 - 75});
 
-    // If the display has never been calibrated before, begin the calibration process
-    if (isDisplayCalibrated()) {
-        calibrationScale = getCalibrationValue();
-    } else {
-        beginCalibration();
-    }
+    // // If the display has never been calibrated before, begin the calibration process
+    // if (isDisplayCalibrated()) {
+    //     calibrationScale = getCalibrationValue();
+    // } else {
+    //     beginCalibration();
+    // }
+
+    calibrationScale = getCalibrationValue();
 }
   
 function draw() {
@@ -1302,6 +1304,7 @@ function setCalibrationValue() {
 
 // Gets the calibration value from the cookie
 function getCalibrationValue() {
+    if (!isDisplayCalibrated()) return 1.0;
     return getCookie("webfitt-calibration");
 }
 
