@@ -54,6 +54,33 @@ canvas {
     display: none;
 }
 
+#visualizer_link {
+    position: absolute;
+    top: 20px;
+    left: 30px;
+    border: 1px solid #888;
+    padding: 4px;
+    border-radius: 8px;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #888;
+    text-decoration: none;
+    font-size: 12px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    transition: color 0.2s;
+}
+
+#visualizer_link:hover {
+    color: #3D9970;
+    background-color: rgba(61, 153, 112, 0.1);
+}
+
+#visualizer_link i {
+    font-size: 14px;
+}
+
 .ui_item:hover {
     cursor: pointer;
 }

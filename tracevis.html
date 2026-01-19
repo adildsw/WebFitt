@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="assets/icon.png" type="image/x-icon">
+    <title>WebFitts | Trace Visualization</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #fff;
+            height: 100%;
+        }
+
+        #header_logo {
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            height: 100px;
+            z-index: 9999;
+            cursor: pointer;
+        }
+
+        #header_logo:hover {
+            opacity: 0.8;
+        }
+
+        .main-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 220px;
+            background-color: #f8f8f8;
+            border-right: 1px solid #ddd;
+            padding: 140px 20px 20px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            overflow-y: auto;
+        }
+
+        .sidebar h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin: 0 0 10px 0;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #444;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        .checkbox-item label {
+            cursor: pointer;
+        }
+
+        .task-config {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 12px;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .task-config h4 {
+            margin: 0 0 8px 0;
+            font-size: 13px;
+            color: #3D9970;
+        }
+
+        .task-config div {
+            color: #555;
+        }
+
+        .content-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            padding-top: 140px;
+            overflow: hidden;
+        }
+
+        .upload-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+
+        .upload-section:hover {
+            border-color: #3D9970;
+        }
+
+        .upload-section.hidden {
+            display: none;
+        }
+
+        .upload-section h2 {
+            font-weight: 400;
+            color: #333;
+        }
+
+        .upload-section p {
+            color: #888;
+            margin-top: 10px;
+        }
+
+        .upload-section input {
+            display: none;
+        }
+
+        .visualization-container {
+            display: none;
+            flex-direction: column;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .visualization-container.active {
+            display: flex;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+
+        .controls button {
+            background-color: #3D9970;
+            color: #fff;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background-color 0.3s;
+        }
+
+        .controls button:hover:not(:disabled) {
+            background-color: #2d7a56;
+        }
+
+        .controls button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .task-info {
+            font-size: 14px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .canvas-wrapper {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #fff;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            overflow: hidden;
+            min-height: 0;
+        }
+
+        #traceCanvas {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        .slider-container {
+            margin-top: 15px;
+            padding: 15px 20px;
+            background-color: #f8f8f8;
+            border-radius: 8px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: #555;
+        }
+
+        .slider-container input[type="range"] {
+            width: 100%;
+            height: 8px;
+            -webkit-appearance: none;
+            background: #ddd;
+            border-radius: 4px;
+            outline: none;
+        }
+
+        .slider-container input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #3D9970;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .slider-container input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: #3D9970;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+
+        .file-info {
+            text-align: center;
+            margin-bottom: 10px;
+            color: #888;
+            font-size: 12px;
+        }
+
+        .load-new-btn {
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .load-new-btn button {
+            background-color: #eee;
+            color: #555;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .load-new-btn button:hover {
+            background-color: #ddd;
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            margin-top: 10px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .legend-color {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+        }
+
+        .legend-line {
+            width: 20px;
+            height: 2px;
+        }
+
+        .speed-legend {
+            display: none;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            color: #666;
+            margin-left: 15px;
+        }
+
+        .speed-legend.visible {
+            display: flex;
+        }
+
+        .speed-gradient-container {
+            position: relative;
+            width: 80px;
+            height: 14px;
+            display: flex;
+            align-items: center;
+        }
+
+        .speed-gradient {
+            width: 100%;
+            height: 100%;
+            clip-path: polygon(0% 50%, 0% 50%, 100% 0%, 100% 100%);
+            background: linear-gradient(to right, #3498db, #9b59b6, #e74c3c);
+        }
+
+        .speed-label {
+            font-size: 10px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <a href="./">
+        <img id="header_logo" src="assets/header_logo.png" alt="WebFitts Logo">
+    </a>
+
+    <div class="main-container">
+        <div class="sidebar" id="sidebar">
+            <h3>Visualization Options</h3>
+            <div class="checkbox-group">
+                <div class="checkbox-item">
+                    <input type="checkbox" id="showTargets" checked>
+                    <label for="showTargets">Show Targets</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="showTargetNumbers" checked>
+                    <label for="showTargetNumbers">Target Numbers</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="showClickSequence" checked>
+                    <label for="showClickSequence">Click Sequence</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="showTrace" checked>
+                    <label for="showTrace">Show Trace</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="showSpeed">
+                    <label for="showSpeed">Show Speed</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="showClicks" checked>
+                    <label for="showClicks">Show Clicks</label>
+                </div>
+            </div>
+
+            <h3>Task Info</h3>
+            <div class="task-config" id="taskConfig">
+                <h4>No Data Loaded</h4>
+                <div>Load a trace file to view task configuration.</div>
+            </div>
+
+            <div class="load-new-btn" id="loadNewBtnContainer" style="display: none;">
+                <button id="loadNewBtn">Load New File</button>
+            </div>
+        </div>
+
+        <div class="content-area">
+            <div class="upload-section" id="uploadSection">
+                <h2>Load Trace Data</h2>
+                <p>Click or drag & drop a _trace.csv file</p>
+                <input type="file" id="fileInput" accept=".csv">
+            </div>
+
+            <div class="visualization-container" id="vizContainer">
+                <div class="file-info" id="fileInfo"></div>
+
+                <div class="controls">
+                    <button id="prevBtn" disabled>&larr; Previous</button>
+                    <span class="task-info" id="taskInfo">Task 1 of 1</span>
+                    <button id="nextBtn" disabled>Next &rarr;</button>
+                </div>
+
+                <div class="canvas-wrapper">
+                    <canvas id="traceCanvas"></canvas>
+                </div>
+
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Timeline</span>
+                        <span id="sliderValue">0 / 0 points</span>
+                    </div>
+                    <input type="range" id="timelineSlider" min="0" max="100" value="100">
+                </div>
+
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-line" style="background-color: #888;"></div>
+                        <span>Trace</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #2ecc71;"></div>
+                        <span>Correct Click</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #e74c3c;"></div>
+                        <span>Incorrect Click</span>
+                    </div>
+                    <div class="speed-legend" id="speedLegend">
+                        <span class="speed-label" id="speedMin">0</span>
+                        <div class="speed-gradient-container">
+                            <div class="speed-gradient"></div>
+                        </div>
+                        <span class="speed-label" id="speedMax">0</span>
+                        <span style="color: #888; font-size: 10px;">px/ms</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // =============================================
+        // Data Structures
+        // =============================================
+
+        // Processed task data
+        let taskData = [];  // Array of task objects
+        let currentTaskIndex = 0;
+
+        // Each task object structure:
+        // {
+        //     taskIndex: number,
+        //     config: { amplitude, width, numTargets, participantCode, sessionCode, conditionCode },
+        //     targets: [ { index, x, y } ],  // Ordered list of targets with positions
+        //     orderedSequence: [ { type: 'move'|'click_correct'|'click_incorrect', x, y, timestamp, clickNumber, targetX, targetY } ]
+        // }
+
+        // =============================================
+        // DOM Elements
+        // =============================================
+        const uploadSection = document.getElementById('uploadSection');
+        const fileInput = document.getElementById('fileInput');
+        const vizContainer = document.getElementById('vizContainer');
+        const canvas = document.getElementById('traceCanvas');
+        const ctx = canvas.getContext('2d');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const taskInfo = document.getElementById('taskInfo');
+        const taskConfig = document.getElementById('taskConfig');
+        const fileInfo = document.getElementById('fileInfo');
+        const loadNewBtn = document.getElementById('loadNewBtn');
+        const loadNewBtnContainer = document.getElementById('loadNewBtnContainer');
+        const timelineSlider = document.getElementById('timelineSlider');
+        const sliderValue = document.getElementById('sliderValue');
+
+        // Checkboxes
+        const showTargetsCheckbox = document.getElementById('showTargets');
+        const showTargetNumbersCheckbox = document.getElementById('showTargetNumbers');
+        const showClickSequenceCheckbox = document.getElementById('showClickSequence');
+        const showTraceCheckbox = document.getElementById('showTrace');
+        const showSpeedCheckbox = document.getElementById('showSpeed');
+        const showClicksCheckbox = document.getElementById('showClicks');
+
+        // Speed legend elements
+        const speedLegend = document.getElementById('speedLegend');
+        const speedMinLabel = document.getElementById('speedMin');
+        const speedMaxLabel = document.getElementById('speedMax');
+
+        // =============================================
+        // Event Listeners
+        // =============================================
+        uploadSection.addEventListener('click', () => fileInput.click());
+        uploadSection.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadSection.style.borderColor = '#3D9970';
+        });
+        uploadSection.addEventListener('dragleave', () => {
+            uploadSection.style.borderColor = '#ccc';
+        });
+        uploadSection.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadSection.style.borderColor = '#ccc';
+            if (e.dataTransfer.files.length > 0) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        prevBtn.addEventListener('click', () => navigateTask(-1));
+        nextBtn.addEventListener('click', () => navigateTask(1));
+        loadNewBtn.addEventListener('click', resetToUpload);
+
+        timelineSlider.addEventListener('input', render);
+
+        // Checkbox listeners
+        showTargetsCheckbox.addEventListener('change', render);
+        showTargetNumbersCheckbox.addEventListener('change', render);
+        showClickSequenceCheckbox.addEventListener('change', render);
+        showTraceCheckbox.addEventListener('change', render);
+        showSpeedCheckbox.addEventListener('change', render);
+        showClicksCheckbox.addEventListener('change', render);
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') navigateTask(-1);
+            else if (e.key === 'ArrowRight') navigateTask(1);
+        });
+
+        // =============================================
+        // File Handling
+        // =============================================
+        function handleFile(file) {
+            if (!file.name.endsWith('.csv')) {
+                alert('Please select a CSV file');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                parseAndProcessCSV(e.target.result, file.name);
+            };
+            reader.readAsText(file);
+        }
+
+        function resetToUpload() {
+            vizContainer.classList.remove('active');
+            uploadSection.classList.remove('hidden');
+            loadNewBtnContainer.style.display = 'none';
+            fileInput.value = '';
+            taskData = [];
+            taskConfig.innerHTML = '<h4>No Data Loaded</h4><div>Load a trace file to view task configuration.</div>';
+        }
+
+        // =============================================
+        // CSV Parsing and Data Processing
+        // =============================================
+        function parseAndProcessCSV(content, filename) {
+            const lines = content.trim().split('\n');
+            if (lines.length < 2) {
+                alert('Invalid CSV file: No data found');
+                return;
+            }
+
+            const headers = lines[0].split(',').map(h => h.trim());
+
+            // Find column indices
+            const cols = {
+                participantCode: headers.indexOf('Participant Code'),
+                sessionCode: headers.indexOf('Session Code'),
+                conditionCode: headers.indexOf('Condition Code'),
+                amplitude: headers.indexOf('Amplitude'),
+                width: headers.indexOf('Width'),
+                numTargets: headers.indexOf('Number of Targets'),
+                taskIndex: headers.indexOf('Task Index'),
+                clickNumber: headers.indexOf('Click Number'),
+                timestamp: headers.indexOf('Timestamp (ms)'),
+                cursorX: headers.indexOf('Cursor X'),
+                cursorY: headers.indexOf('Cursor Y'),
+                targetX: headers.indexOf('Target X'),
+                targetY: headers.indexOf('Target Y'),
+                eventType: headers.indexOf('Event Type')
+            };
+
+            // Validate required columns exist
+            const requiredColumns = [
+                { key: 'taskIndex', name: 'Task Index' },
+                { key: 'clickNumber', name: 'Click Number' },
+                { key: 'timestamp', name: 'Timestamp (ms)' },
+                { key: 'cursorX', name: 'Cursor X' },
+                { key: 'cursorY', name: 'Cursor Y' },
+                { key: 'targetX', name: 'Target X' },
+                { key: 'targetY', name: 'Target Y' },
+                { key: 'amplitude', name: 'Amplitude' },
+                { key: 'width', name: 'Width' },
+                { key: 'numTargets', name: 'Number of Targets' }
+            ];
+
+            const missingColumns = requiredColumns.filter(col => cols[col.key] === -1);
+
+            if (missingColumns.length > 0) {
+                alert(
+                    'Invalid file format.\n\n' +
+                    'Please load a valid _trace.csv file generated by WebFitts.\n\n' +
+                    'Missing columns: ' + missingColumns.map(c => c.name).join(', ')
+                );
+                return;
+            }
+
+            // Parse all data rows
+            const rawData = [];
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',').map(v => v.trim());
+                if (values.length < headers.length) continue;
+
+                rawData.push({
+                    participantCode: values[cols.participantCode] || '',
+                    sessionCode: values[cols.sessionCode] || '',
+                    conditionCode: values[cols.conditionCode] || '',
+                    amplitude: parseFloat(values[cols.amplitude]),
+                    width: parseFloat(values[cols.width]),
+                    numTargets: parseInt(values[cols.numTargets]),
+                    taskIndex: parseInt(values[cols.taskIndex]),
+                    clickNumber: parseInt(values[cols.clickNumber]),
+                    timestamp: parseFloat(values[cols.timestamp]),
+                    cursorX: parseFloat(values[cols.cursorX]),
+                    cursorY: parseFloat(values[cols.cursorY]),
+                    targetX: parseFloat(values[cols.targetX]),
+                    targetY: parseFloat(values[cols.targetY]),
+                    eventType: cols.eventType !== -1 ? values[cols.eventType] : 'move'
+                });
+            }
+
+            if (rawData.length === 0) {
+                alert('No valid data found in CSV');
+                return;
+            }
+
+            // Process data into task structure
+            processRawData(rawData);
+
+            // Update UI
+            fileInfo.textContent = `Loaded: ${filename} (${rawData.length} data points)`;
+            uploadSection.classList.add('hidden');
+            vizContainer.classList.add('active');
+            loadNewBtnContainer.style.display = 'block';
+            currentTaskIndex = 0;
+            updateSlider();
+            render();
+        }
+
+        function processRawData(rawData) {
+            // Group by task index
+            const taskGroups = {};
+
+            for (const row of rawData) {
+                const idx = row.taskIndex;
+                if (!taskGroups[idx]) {
+                    taskGroups[idx] = [];
+                }
+                taskGroups[idx].push(row);
+            }
+
+            // Process each task
+            taskData = [];
+
+            for (const taskIdx of Object.keys(taskGroups).sort((a, b) => parseInt(a) - parseInt(b))) {
+                const rows = taskGroups[taskIdx];
+                const firstRow = rows[0];
+
+                // Extract configuration
+                const config = {
+                    amplitude: firstRow.amplitude,
+                    width: firstRow.width,
+                    numTargets: firstRow.numTargets,
+                    participantCode: firstRow.participantCode,
+                    sessionCode: firstRow.sessionCode,
+                    conditionCode: firstRow.conditionCode
+                };
+
+                // Extract ordered targets
+                const targets = extractOrderedTargets(rows, config);
+
+                // Build ordered sequence of trace points and clicks
+                const orderedSequence = [];
+                for (const row of rows) {
+                    orderedSequence.push({
+                        type: row.eventType,
+                        x: row.cursorX,
+                        y: row.cursorY,
+                        timestamp: row.timestamp,
+                        clickNumber: row.clickNumber,
+                        targetX: row.targetX,
+                        targetY: row.targetY
+                    });
+                }
+
+                // Sort by timestamp to ensure correct order
+                orderedSequence.sort((a, b) => a.timestamp - b.timestamp);
+
+                taskData.push({
+                    taskIndex: parseInt(taskIdx),
+                    config: config,
+                    targets: targets,
+                    orderedSequence: orderedSequence
+                });
+            }
+        }
+
+        function extractOrderedTargets(rows, config) {
+            // Extract actual target positions from the trace data
+            // Each row has targetX, targetY which are the calibrated positions
+            // We map clickNumber -> target index -> position
+            const numTargets = config.numTargets;
+            const targetPositions = {};  // Map: targetIndex -> {x, y}
+
+            for (const row of rows) {
+                const targetIdx = getTargetIdxFromClickNumber(row.clickNumber, numTargets);
+                // Store the position (use first occurrence, they should all be the same)
+                if (targetPositions[targetIdx] === undefined) {
+                    targetPositions[targetIdx] = {
+                        x: row.targetX,
+                        y: row.targetY
+                    };
+                }
+            }
+
+            // Build ordered target array
+            const targets = [];
+            for (let i = 0; i < numTargets; i++) {
+                if (targetPositions[i]) {
+                    targets.push({
+                        index: i,
+                        x: targetPositions[i].x,
+                        y: targetPositions[i].y
+                    });
+                } else {
+                    // If we don't have this target in data, calculate it from others
+                    // Find any known target and calculate center, then this target's position
+                    const knownIdx = Object.keys(targetPositions)[0];
+                    if (knownIdx !== undefined) {
+                        const known = targetPositions[knownIdx];
+                        const knownAngle = (parseInt(knownIdx) * 360 / numTargets) * Math.PI / 180;
+
+                        // We need to find the actual radius from the data
+                        // Use distance from center, but we need center first
+                        // For now, estimate from two known points if available
+                        // This is a fallback - normally all targets should be in data
+                        const angle = (i * 360 / numTargets) * Math.PI / 180;
+
+                        // Find center from a known target
+                        // This requires knowing the radius, which we can get from two targets
+                        // For simplicity, skip targets we don't have data for
+                        targets.push({
+                            index: i,
+                            x: 0,
+                            y: 0
+                        });
+                    }
+                }
+            }
+
+            // If we have at least 2 targets, we can calculate missing ones
+            // by finding the center and radius
+            if (Object.keys(targetPositions).length >= 2) {
+                const indices = Object.keys(targetPositions).map(k => parseInt(k));
+                const idx1 = indices[0];
+                const idx2 = indices[1];
+                const pos1 = targetPositions[idx1];
+                const pos2 = targetPositions[idx2];
+
+                const angle1 = (idx1 * 360 / numTargets) * Math.PI / 180;
+                const angle2 = (idx2 * 360 / numTargets) * Math.PI / 180;
+
+                // Solve for center: pos = center + radius * (cos, sin)
+                // Two equations, can solve for center
+                const cos1 = Math.cos(angle1), sin1 = Math.sin(angle1);
+                const cos2 = Math.cos(angle2), sin2 = Math.sin(angle2);
+
+                // pos1.x = cx + r*cos1, pos1.y = cy + r*sin1
+                // pos2.x = cx + r*cos2, pos2.y = cy + r*sin2
+                // Subtracting: pos1.x - pos2.x = r*(cos1 - cos2)
+                //              pos1.y - pos2.y = r*(sin1 - sin2)
+
+                const dCos = cos1 - cos2;
+                const dSin = sin1 - sin2;
+
+                let radius;
+                if (Math.abs(dCos) > 0.001) {
+                    radius = (pos1.x - pos2.x) / dCos;
+                } else if (Math.abs(dSin) > 0.001) {
+                    radius = (pos1.y - pos2.y) / dSin;
+                } else {
+                    radius = 100; // fallback
+                }
+
+                const centerX = pos1.x - radius * cos1;
+                const centerY = pos1.y - radius * sin1;
+
+                // Fill in missing targets
+                for (let i = 0; i < targets.length; i++) {
+                    if (targets[i].x === 0 && targets[i].y === 0) {
+                        const angle = (i * 360 / numTargets) * Math.PI / 180;
+                        targets[i].x = centerX + radius * Math.cos(angle);
+                        targets[i].y = centerY + radius * Math.sin(angle);
+                    }
+                }
+            }
+
+            return targets;
+        }
+
+        // Get target index from click number (same logic as WebFitts)
+        function getTargetIdxFromClickNumber(clickNumber, numTargets) {
+            if (clickNumber === 0) return 0;
+
+            const markers = [];
+            const marker1 = [];
+            const marker2 = [];
+
+            for (let i = 0; i < numTargets; i++) {
+                markers.push(i);
+            }
+
+            for (let i = 0; i < markers.length; i++) {
+                if (i % 2 === 0) {
+                    marker1.push(markers[i]);
+                } else {
+                    marker2.push(markers[i]);
+                }
+            }
+
+            marker2.reverse();
+
+            const clickSequence = [];
+            const maxLen = Math.max(marker1.length, marker2.length);
+            for (let i = 0; i < maxLen; i++) {
+                if (i < marker1.length) clickSequence.push(marker1[i]);
+                if (i < marker2.length) clickSequence.push(marker2[i]);
+            }
+
+            return clickSequence[clickNumber % clickSequence.length];
+        }
+
+        // =============================================
+        // Navigation
+        // =============================================
+        function navigateTask(delta) {
+            currentTaskIndex = Math.max(0, Math.min(taskData.length - 1, currentTaskIndex + delta));
+            updateSlider();
+            render();
+        }
+
+        function updateSlider() {
+            if (taskData.length === 0) return;
+            const task = taskData[currentTaskIndex];
+            timelineSlider.max = task.orderedSequence.length;
+            timelineSlider.value = task.orderedSequence.length;
+        }
+
+        // =============================================
+        // Rendering
+        // =============================================
+        function render() {
+            if (taskData.length === 0) return;
+
+            const task = taskData[currentTaskIndex];
+            const pointsToShow = parseInt(timelineSlider.value);
+
+            // Update UI
+            prevBtn.disabled = currentTaskIndex === 0;
+            nextBtn.disabled = currentTaskIndex === taskData.length - 1;
+            taskInfo.textContent = `Task ${currentTaskIndex + 1} of ${taskData.length}`;
+            sliderValue.textContent = `${pointsToShow} / ${task.orderedSequence.length} points`;
+
+            // Update task config display
+            updateTaskConfigDisplay(task.config);
+
+            // Setup canvas
+            setupCanvas(task);
+
+            // Clear canvas
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Get visible sequence based on slider
+            const visibleSequence = task.orderedSequence.slice(0, pointsToShow);
+
+            // Render layers based on checkboxes
+            if (showTargetsCheckbox.checked) {
+                renderTargets(task);
+            }
+            if (showTargetNumbersCheckbox.checked) {
+                renderTargetNumbers(task);
+            }
+            if (showClickSequenceCheckbox.checked) {
+                renderClickSequenceLabels(task, visibleSequence);
+            }
+            if (showTraceCheckbox.checked && !showSpeedCheckbox.checked) {
+                renderTrace(task, visibleSequence);
+            }
+            if (showSpeedCheckbox.checked) {
+                renderTraceWithSpeed(task, visibleSequence);
+                speedLegend.classList.add('visible');
+            } else {
+                speedLegend.classList.remove('visible');
+            }
+            if (showClicksCheckbox.checked) {
+                renderClicks(task, visibleSequence);
+            }
+        }
+
+        function updateTaskConfigDisplay(config) {
+            taskConfig.innerHTML = `
+                <h4>Task ${currentTaskIndex + 1}</h4>
+                <div><strong>Participant:</strong> ${config.participantCode}</div>
+                <div><strong>Session:</strong> ${config.sessionCode}</div>
+                <div><strong>Condition:</strong> ${config.conditionCode}</div>
+                <div><strong>Amplitude:</strong> ${config.amplitude}</div>
+                <div><strong>Width:</strong> ${config.width}</div>
+                <div><strong>Targets:</strong> ${config.numTargets}</div>
+            `;
+        }
+
+        // Canvas transform state
+        let transformScale = 1;
+        let transformOffsetX = 0;
+        let transformOffsetY = 0;
+
+        function setupCanvas(task) {
+            // Calculate bounds from targets and sequence
+            let minX = Infinity, maxX = -Infinity;
+            let minY = Infinity, maxY = -Infinity;
+
+            for (const target of task.targets) {
+                const radius = task.config.width / 2;
+                minX = Math.min(minX, target.x - radius);
+                maxX = Math.max(maxX, target.x + radius);
+                minY = Math.min(minY, target.y - radius);
+                maxY = Math.max(maxY, target.y + radius);
+            }
+
+            for (const point of task.orderedSequence) {
+                minX = Math.min(minX, point.x);
+                maxX = Math.max(maxX, point.x);
+                minY = Math.min(minY, point.y);
+                maxY = Math.max(maxY, point.y);
+            }
+
+            // Add padding
+            const padding = 60;
+            const dataWidth = maxX - minX + padding * 2;
+            const dataHeight = maxY - minY + padding * 2;
+
+            // Get container size
+            const wrapper = canvas.parentElement;
+            const maxWidth = wrapper.clientWidth - 20;
+            const maxHeight = wrapper.clientHeight - 20;
+
+            // Calculate canvas size maintaining aspect ratio
+            const aspectRatio = dataWidth / dataHeight;
+            let canvasWidth, canvasHeight;
+
+            if (aspectRatio > maxWidth / maxHeight) {
+                canvasWidth = Math.min(maxWidth, 1000);
+                canvasHeight = canvasWidth / aspectRatio;
+            } else {
+                canvasHeight = Math.min(maxHeight, 700);
+                canvasWidth = canvasHeight * aspectRatio;
+            }
+
+            canvas.width = canvasWidth;
+            canvas.height = canvasHeight;
+
+            // Calculate transform
+            transformScale = Math.min(canvasWidth / dataWidth, canvasHeight / dataHeight);
+            transformOffsetX = -minX + padding + (canvasWidth / transformScale - dataWidth) / 2;
+            transformOffsetY = -minY + padding + (canvasHeight / transformScale - dataHeight) / 2;
+        }
+
+        function transform(x, y) {
+            return {
+                x: (x + transformOffsetX) * transformScale,
+                y: (y + transformOffsetY) * transformScale
+            };
+        }
+
+        // =============================================
+        // Visualization Functions
+        // =============================================
+
+        function renderTargets(task) {
+            const width = task.config.width;
+
+            for (const target of task.targets) {
+                const pos = transform(target.x, target.y);
+                const radius = (width / 2) * transformScale;
+
+                // Draw target circle
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#fff';
+                ctx.fill();
+                ctx.strokeStyle = '#181818';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+        }
+
+        function renderTargetNumbers(task) {
+            const width = task.config.width;
+
+            ctx.fillStyle = '#333';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            for (const target of task.targets) {
+                const pos = transform(target.x, target.y);
+                const radius = (width / 2) * transformScale;
+                const fontSize = Math.max(10, Math.min(16, radius * 0.5));
+
+                ctx.font = `${fontSize}px Arial`;
+                ctx.fillText(target.index.toString(), pos.x, pos.y);
+            }
+        }
+
+        function renderClickSequenceLabels(task, visibleSequence) {
+            // Find unique click numbers in visible sequence
+            const seenClickNumbers = new Set();
+
+            for (const point of visibleSequence) {
+                if (point.type && point.type.startsWith('click')) {
+                    seenClickNumbers.add(point.clickNumber);
+                }
+            }
+
+            // Also show current target being aimed at
+            if (visibleSequence.length > 0) {
+                const lastPoint = visibleSequence[visibleSequence.length - 1];
+                seenClickNumbers.add(lastPoint.clickNumber);
+            }
+
+            const width = task.config.width;
+
+            ctx.fillStyle = '#3D9970';
+            ctx.font = 'bold 12px Arial';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+
+            for (const clickNum of seenClickNumbers) {
+                const targetIdx = getTargetIdxFromClickNumber(clickNum, task.config.numTargets);
+                const target = task.targets[targetIdx];
+                const pos = transform(target.x, target.y);
+                const radius = (width / 2) * transformScale;
+
+                ctx.fillText(`[${clickNum}]`, pos.x + radius + 5, pos.y);
+            }
+        }
+
+        function renderTrace(task, visibleSequence) {
+            const movePoints = visibleSequence.filter(p => p.type === 'move');
+
+            if (movePoints.length < 2) return;
+
+            ctx.beginPath();
+            ctx.strokeStyle = '#888';
+            ctx.lineWidth = 1.5;
+
+            const firstPos = transform(movePoints[0].x, movePoints[0].y);
+            ctx.moveTo(firstPos.x, firstPos.y);
+
+            for (let i = 1; i < movePoints.length; i++) {
+                const pos = transform(movePoints[i].x, movePoints[i].y);
+                ctx.lineTo(pos.x, pos.y);
+            }
+
+            ctx.stroke();
+        }
+
+        function renderTraceWithSpeed(task, visibleSequence) {
+            const movePoints = visibleSequence.filter(p => p.type === 'move');
+
+            // Line width range
+            const minLineWidth = 1;
+            const maxLineWidth = 4;
+
+            if (movePoints.length < 2) {
+                speedMinLabel.textContent = '0';
+                speedMaxLabel.textContent = '0';
+                return;
+            }
+
+            // Calculate speeds between consecutive points
+            const speeds = [];
+            for (let i = 1; i < movePoints.length; i++) {
+                const p1 = movePoints[i - 1];
+                const p2 = movePoints[i];
+
+                const dx = p2.x - p1.x;
+                const dy = p2.y - p1.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const dt = p2.timestamp - p1.timestamp;
+
+                // Speed in pixels per millisecond
+                const speed = dt > 0 ? dist / dt : 0;
+                speeds.push(speed);
+            }
+
+            // Find min and max speed
+            let minSpeed = Infinity;
+            let maxSpeed = -Infinity;
+            for (const speed of speeds) {
+                if (speed < minSpeed) minSpeed = speed;
+                if (speed > maxSpeed) maxSpeed = speed;
+            }
+
+            // Handle edge case where all speeds are the same
+            if (minSpeed === maxSpeed) {
+                maxSpeed = minSpeed + 0.001;
+            }
+
+            // Update legend labels (rounded to 2 decimal places)
+            speedMinLabel.textContent = `${Math.round(minSpeed * 100) / 100}`;
+            speedMaxLabel.textContent = `${Math.round(maxSpeed * 100) / 100}`;
+
+            // Draw segments with color and line width based on speed
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            for (let i = 1; i < movePoints.length; i++) {
+                const p1 = movePoints[i - 1];
+                const p2 = movePoints[i];
+                const speed = speeds[i - 1];
+
+                // Normalize speed to 0-1 range
+                const normalizedSpeed = (speed - minSpeed) / (maxSpeed - minSpeed);
+
+                // Get color from blue-purple-red gradient
+                const color = getSpeedColor(normalizedSpeed);
+
+                // Calculate line width based on speed (thicker = faster)
+                const lineWidth = minLineWidth + (maxLineWidth - minLineWidth) * normalizedSpeed;
+
+                const pos1 = transform(p1.x, p1.y);
+                const pos2 = transform(p2.x, p2.y);
+
+                ctx.beginPath();
+                ctx.strokeStyle = color;
+                ctx.lineWidth = lineWidth;
+                ctx.moveTo(pos1.x, pos1.y);
+                ctx.lineTo(pos2.x, pos2.y);
+                ctx.stroke();
+            }
+        }
+
+        function getSpeedColor(t) {
+            // Blue (#3498db) -> Purple (#9b59b6) -> Red (#e74c3c)
+            // t = 0: blue (slow), t = 1: red (fast)
+
+            let r, g, b;
+
+            if (t < 0.5) {
+                // Blue to Purple (0 to 0.5)
+                const t2 = t * 2;  // 0 to 1
+                r = Math.round(52 + (155 - 52) * t2);   // 52 -> 155
+                g = Math.round(152 + (89 - 152) * t2);  // 152 -> 89
+                b = Math.round(219 + (182 - 219) * t2); // 219 -> 182
+            } else {
+                // Purple to Red (0.5 to 1)
+                const t2 = (t - 0.5) * 2;  // 0 to 1
+                r = Math.round(155 + (231 - 155) * t2); // 155 -> 231
+                g = Math.round(89 + (76 - 89) * t2);    // 89 -> 76
+                b = Math.round(182 + (60 - 182) * t2);  // 182 -> 60
+            }
+
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        function renderClicks(task, visibleSequence) {
+            const clicks = visibleSequence.filter(p => p.type && p.type.startsWith('click'));
+
+            for (const click of clicks) {
+                const pos = transform(click.x, click.y);
+                const isCorrect = click.type === 'click_correct';
+
+                // Draw click marker
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, 7, 0, Math.PI * 2);
+                ctx.fillStyle = isCorrect ? '#2ecc71' : '#e74c3c';
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Draw X for incorrect clicks
+                if (!isCorrect) {
+                    ctx.beginPath();
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = 2;
+                    ctx.moveTo(pos.x - 3, pos.y - 3);
+                    ctx.lineTo(pos.x + 3, pos.y + 3);
+                    ctx.moveTo(pos.x + 3, pos.y - 3);
+                    ctx.lineTo(pos.x - 3, pos.y + 3);
+                    ctx.stroke();
+                }
+            }
+        }
+    </script>
+</body>
+</html>
