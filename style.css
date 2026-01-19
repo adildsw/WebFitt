@@ -16,26 +16,45 @@ canvas {
     z-index: 9999;
 }
 
-#github_logo {
+#topleft_icons {
     position: absolute;
-    bottom: 20px;
-    right: 30px;
-    height: 30px;
+    top: 20px;
+    left: 30px;
     z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 6px 10px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background-color: #fff;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-#calibration_icon {
-    position: absolute;
-    bottom: 20px;
-    left: 30px;
-    height: 30px;
-    z-index: 9999;
+.topleft_icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 28px;
+    cursor: pointer;
+    color: #888;
+    transition: color 0.2s;
+}
+
+.topleft_icon:hover {
+    color: #3D9970;
+}
+
+.topleft_icon i {
+    font-size: 16px;
+    margin: 0;
 }
 
 #volume_icon {
     position: absolute;
     bottom: 20px;
-    left: 90px;
+    left: 30px;
     height: 30px;
     z-index: 9999;
 }
@@ -43,42 +62,155 @@ canvas {
 #trail_icon {
     position: absolute;
     bottom: 20px;
-    left: 140px;
+    left: 80px;
     height: 30px;
     z-index: 9999;
+}
+
+#connector_ui {
+    position: absolute;
+    bottom: 20px;
+    right: 30px;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 6px 10px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background-color: #fff;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.connector_icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 28px;
+    cursor: pointer;
+    color: #888;
+    transition: color 0.2s;
+}
+
+.connector_icon:hover {
+    color: #3D9970;
+}
+
+.connector_icon i {
+    font-size: 16px;
+    margin: 0;
+}
+
+.connector_indicator {
+    position: absolute;
+    bottom: 0;
+    right: 2px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #ccc;
+    border: 1px solid #fff;
+    transition: background-color 0.2s;
+}
+
+.connector_icon.active .connector_indicator {
+    background-color: #3D9970;
+}
+
+.connector_popup {
+    position: absolute;
+    bottom: 65px;
+    right: 30px;
+    z-index: 10000;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    display: none;
+    min-width: 220px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.connector_popup.visible {
+    display: block;
+}
+
+.connector_popup_header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    border-bottom: 1px solid #eee;
+    font-size: 13px;
+    font-weight: 600;
+    color: #555;
+}
+
+.connector_popup_header i {
+    cursor: pointer;
+    color: #888;
+    transition: color 0.2s;
+}
+
+.connector_popup_header i:hover {
+    color: #333;
+}
+
+.connector_popup_content {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+#connector_address {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+
+#connector_address:focus {
+    border-color: #3D9970;
+}
+
+#connector_btn {
+    padding: 8px 12px;
+    border: 1px solid #3D9970;
+    border-radius: 4px;
+    background-color: #fff;
+    color: #3D9970;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+#connector_btn:hover {
+    background-color: #3D9970;
+    color: #fff;
+}
+
+#connector_btn.connected {
+    background-color: #3D9970;
+    border-color: #3D9970;
+    color: #fff;
+}
+
+#connector_btn.connected:hover {
+    background-color: #c9302c;
+    border-color: #c9302c;
 }
 
 #confirm_calibration_btn {
     position: absolute;
     z-index: 9999;
     display: none;
-}
-
-#visualizer_link {
-    position: absolute;
-    top: 20px;
-    left: 30px;
-    border: 1px solid #888;
-    padding: 4px;
-    border-radius: 8px;
-    z-index: 9999;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    color: #888;
-    text-decoration: none;
-    font-size: 12px;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    transition: color 0.2s;
-}
-
-#visualizer_link:hover {
-    color: #3D9970;
-    background-color: rgba(61, 153, 112, 0.1);
-}
-
-#visualizer_link i {
-    font-size: 14px;
 }
 
 .ui_item:hover {

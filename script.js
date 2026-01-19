@@ -67,25 +67,11 @@ $(document).ready(function() {
         resultsview = false;
     }
 
-    // Change GitHub logo on hover
-    $("#github_logo").hover(function() {
-        $("#github_logo").attr("src", "assets/github_hover.png");
-    }, function() {
-        $("#github_logo").attr("src", "assets/github_default.png");
-    });
-
     // Change header logo on hover
     $("#header_logo").hover(function() {
         $("#header_logo").attr("src", "assets/header_logo_hover.png");
     }, function() {
         $("#header_logo").attr("src", "assets/header_logo.png");
-    });
-
-    // Change calibrate icon on hover
-    $("#calibration_icon").hover(function() {
-        $("#calibration_icon").attr("src", "assets/calibrate_hover.png");
-    }, function() {
-        $("#calibration_icon").attr("src", "assets/calibrate.png");
     });
 
     // Change volume icon on hover
@@ -120,9 +106,6 @@ $(document).ready(function() {
             isTrailing = !isTrailing;
             renderTrailImage(true);
         }
-        else if (id == "calibration_icon") {
-            beginCalibration();
-        }
     });
 
     $(document).on("click", "#confirm_calibration_btn", function() {
@@ -140,9 +123,63 @@ $(document).ready(function() {
         window.location.reload();
     });
 
-    // Open GitHub project page when GitHub logo is clicked
-    $("#github_logo").click(function() {
+    // Top-left icon click handlers
+    $("#visualizer_icon").click(function() {
+        window.open("tracevis.html", "_blank");
+    });
+
+    $("#calibration_icon").click(function() {
+        beginCalibration();
+    });
+
+    $("#github_icon").click(function() {
         window.open("https://github.com/adildsw/WebFitt");
+    });
+
+    // WebSocket icon click handler - show popup
+    $("#connector_ws").click(function() {
+        $("#ws_popup").toggleClass("visible");
+    });
+
+    // Close popup button
+    $("#ws_popup_close").click(function() {
+        $("#ws_popup").removeClass("visible");
+    });
+
+    // Close popup when clicking outside
+    $(document).click(function(e) {
+        if (!$(e.target).closest("#ws_popup, #connector_ws").length) {
+            $("#ws_popup").removeClass("visible");
+        }
+    });
+
+    // Connector button click handler
+    $("#connector_btn").click(function() {
+        if (Connector.isConnected()) {
+            Connector.disconnect();
+        } else {
+            var address = $("#connector_address").val().trim();
+            if (address === "") {
+                address = "localhost:8765";
+                $("#connector_address").val(address);
+            }
+            Connector.connect(address).catch(function() {
+                alert("Failed to connect to " + address + "\n\nMake sure:\n1. The server is running (python websocket_server.py)\n2. The address is correct (e.g., localhost:8765)");
+            });
+        }
+    });
+
+    // Connector status callback
+    Connector.onConnectionStatusChange(function(isConnected) {
+        if (isConnected) {
+            $("#connector_btn").text("Disconnect").addClass("connected");
+            $("#connector_address").prop("disabled", true);
+            $("#connector_ws").addClass("active");
+        } else {
+            $("#connector_btn").text("Connect").removeClass("connected");
+            $("#connector_address").prop("disabled", false);
+            $("#connector_ws").removeClass("active");
+        }
     });
 
     $('#calibration-modal')
@@ -269,7 +306,7 @@ $(document).ready(function() {
         }
     });
 
-    // Hide header logo at main menu
+    // Hide header logo at main menu (top-left icons stay visible)
     $("#header_logo").hide();
 
     // Hide data policy checkbox at main menu if servdown is false
@@ -288,6 +325,7 @@ function beginCalibration() {
     isCalibrating = true;
     $("#main_menu").hide();
     $(".ui_item").hide();
+    $("#topleft_icons").hide();
     $("#header_logo").show();
     $("#confirm_calibration_btn").show();
     slider.value(calibrationScale);
@@ -298,6 +336,7 @@ function endCalibration() {
     $("#main_menu").show();
     $(".ui_item").show();
     $("#header_logo").hide();
+    $("#topleft_icons").show();
     $("#confirm_calibration_btn").hide();
     slider.value(calibrationScale);
     // hide slider
@@ -343,6 +382,18 @@ function beginApp(a_list, w_list, n) {
     else {
         isTaskRunning = true;
         $("#header_logo").show();
+        $("#topleft_icons").hide();
+
+        // Broadcast study start event
+        Connector.broadcastEvent("study_start", {
+            participantCode: participantCode,
+            sessionCode: sessionCode,
+            conditionCode: conditionCode,
+            handDominance: handDominance,
+            pointingDevice: pointingDevice,
+            deviceExperience: deviceExperience,
+            totalTasks: tasks.length
+        });
     }
 }
 
@@ -388,6 +439,7 @@ function draw() {
     else if (isTaskRunning) {
         renderTrail();
         recordTracePoint();
+        broadcastToConnector();
         runPipeline();
         renderInfoText();
     }
@@ -433,6 +485,14 @@ function runPipeline() {
     renderTargets(A, W, n, mainTarget);
 
     if (clickNumber == n + 1) {
+        // Broadcast task end event
+        Connector.broadcastEvent("task_end", {
+            taskIndex: taskIdx,
+            amplitude: uncalibratedTasks[taskIdx].A,
+            width: uncalibratedTasks[taskIdx].W,
+            numTargets: n
+        });
+
         if (taskIdx < tasks.length - 1) {
             taskIdx++;
         }
@@ -446,6 +506,14 @@ function runPipeline() {
             if (servdown) {
                 uploadResult();
             }
+
+            // Broadcast study end event
+            Connector.broadcastEvent("study_end", {
+                participantCode: participantCode,
+                sessionCode: sessionCode,
+                conditionCode: conditionCode,
+                totalTasks: tasks.length
+            });
         }
         clickNumber = 0;
         beginFlag = false;
@@ -474,6 +542,14 @@ function onCanvasClick() {
         currentClickTime = lastClickTime;
         traceStartTime = lastClickTime;
         clickNumber++;
+
+        // Broadcast task start event
+        Connector.broadcastEvent("task_start", {
+            taskIndex: taskIdx,
+            amplitude: uncalibratedTasks[taskIdx].A,
+            width: uncalibratedTasks[taskIdx].W,
+            numTargets: n
+        });
     }
     else if (beginFlag) {
         currentClickTime = millis();
@@ -481,6 +557,15 @@ function onCanvasClick() {
         computeClickData(clickPos);
         clickNumber++;
         lastClickTime = currentClickTime;
+
+        // Broadcast click event
+        Connector.broadcastEvent("click", {
+            x: clickPos.x,
+            y: clickPos.y,
+            correct: correct,
+            clickNumber: clickNumber,
+            taskIndex: taskIdx
+        });
     }
 }
 
@@ -660,6 +745,33 @@ function recordTraceClick(clickPos, isCorrect) {
     data.push(isCorrect ? "click_correct" : "click_incorrect");
 
     traceData.push(data);
+}
+
+// Broadcasts study data to external connector
+function broadcastToConnector() {
+    if (!beginFlag || !Connector.isConnected()) {
+        return;
+    }
+
+    var A = uncalibratedTasks[taskIdx].A;
+    var W = uncalibratedTasks[taskIdx].W;
+    var n = uncalibratedTasks[taskIdx].n;
+    var mainTarget = getTargetIdxFromClickNumber(clickNumber, n);
+    var targetPos = getTargetPosition(tasks[taskIdx].A, n, mainTarget);
+
+    Connector.broadcastStudyData({
+        cursorX: mouseX,
+        cursorY: mouseY,
+        targetX: targetPos.x,
+        targetY: targetPos.y,
+        taskIndex: taskIdx,
+        clickNumber: clickNumber,
+        amplitude: A,
+        width: W,
+        numTargets: n,
+        canvasWidth: width,
+        canvasHeight: height
+    });
 }
 
 // Renders task information text
